@@ -1,0 +1,40 @@
+{
+    "name": "itinysun/laraman",
+    "description": "",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "itinysun",
+            "email": "860760361@qq.com",
+            "homepage": ""
+        }
+    ],
+    "homepage": "https://github.com/itinysun/laraman",
+    "keywords": ["Laravel", "Laraman"],
+    "require": {
+
+    },
+    "require-dev": {
+
+    },
+    "autoload": {
+        "psr-4": {
+            "Itinysun\\Laraman\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Itinysun\\Laraman\\Tests\\": "tests"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Itinysun\\Laraman\\LaramanServiceProvider"
+            ],
+            "aliases": {
+                "Laraman": "Itinysun\\Laraman\\Facades\\Laraman"
+            }
+        }
+    }
+}
