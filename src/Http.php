@@ -747,7 +747,7 @@ class Http
     }
 
     /**
-     * Http encode.
+     * ApiServer encode.
      * @param string $content
      * @param TcpConnection $connection
      * @return string

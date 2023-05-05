@@ -8,6 +8,7 @@ use Illuminate\Console\Command;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
 use Itinysun\Laraman\Http;
+use Itinysun\Laraman\Server\ApiServer;
 use Workerman\Connection\TcpConnection;
 use Workerman\Timer;
 use Workerman\Worker;
@@ -28,7 +29,7 @@ class Laraman extends Command
      */
     protected $description = 'Command description';
 
-    protected Kernel $kernel;
+
 
     public const VERSION = "0.6.1";
 
@@ -50,17 +51,10 @@ class Laraman extends Command
 
         $worker = $this->buildWorker();
 
-        $this->kernel = App::get(Kernel::class);
-
         $worker->onWorkerStart = function ($worker) {
-            if ($worker->id === 0) {
-                Timer::add(600, function () {
-                    Http::tryGcSessions();
-                });
-            }
-        };
-        $worker->onMessage = function ($connection)  {
-            $connection->send($this->getResponse());
+            $app = new ApiServer();
+            $worker->onMessage = [$app, 'onMessage'];
+            call_user_func([$app, 'onWorkerStart'], $worker);
         };
 
 
@@ -133,20 +127,7 @@ class Laraman extends Command
         return $worker;
     }
 
-    public function getResponse(): bool|string
-    {
-        ob_start();
 
-        $response = $this->kernel->handle(
-            $request = Request::capture()
-        );
-
-        $response->send();
-
-        $this->kernel->terminate($request, $response);
-
-        return ob_get_clean();
-    }
 
     public function init(): void
     {

@@ -195,6 +195,6 @@ if (! function_exists('header')) {
 
 
 /* function exit(string $status = ''): void {  //string|int
-    Http::end($status);
+    http::end($status);
 } // exit and die are language constructors, change your code with an empty ExitException
  */
