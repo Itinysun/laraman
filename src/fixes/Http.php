@@ -1,11 +1,9 @@
 <?php
 
-namespace Itinysun\Laraman;
+namespace Itinysun\Laraman\fixes;
 
 use Workerman\Connection\TcpConnection;
-use Workerman\Protocols\Websocket;
 use Workerman\Timer;
-use Workerman\Worker;
 
 /**
  * http protocol
@@ -754,6 +752,7 @@ class Http
      */
     public static function encode(?string $content, TcpConnection $connection): string
     {
+
         $content = (string)$content;
 
         // http-code status line.

@@ -1,6 +1,6 @@
 <?php
 
-namespace Itinysun\Laraman\Server;
+namespace Itinysun\Laraman\server;
 
 use App\Exceptions\Handler;
 use App\Http\Kernel;
@@ -9,6 +9,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
 use Throwable;
 use Workerman\Connection\TcpConnection;
+use Workerman\Protocols\Http\Request as WorkmanRequest;
 use Workerman\Worker;
 
 class ApiServer
@@ -20,23 +21,33 @@ class ApiServer
 
     protected Kernel $kernel;
 
+
     /**
      * OnMessage.
      * @param TcpConnection|mixed $connection
      * @return null
      */
-    public function onMessage(mixed $connection)
+    public function onMessage(mixed $connection,WorkmanRequest $workmanRequest)
     {
-        $request = Request::capture();
+        $request = Request::createFromBase(\Itinysun\Laraman\Http\Request::createFromWorkmanRequest($workmanRequest));
+
+        if (str_contains($request->path(), '.')) {
+            $resp = StaticFileServer::resolvePath($request->path(),$request);
+            if(false!==$resp){
+                $this->send($connection,$resp,$request);
+                return null;
+            }
+        }
+
         try {
             $response = $this->getResponse($request);
             $this->send($connection, $response, $request);
         } catch (Throwable $e) {
             $resp = json_encode([
-                'code'=>500,
-                'data'=>['code'=>$e->getCode(),'msg'=>$e->getMessage()],
-                'msg'=>'unhandled exception from server',
-                'request_id'=>''
+                'code' => 500,
+                'data' => ['code' => $e->getCode(), 'msg' => $e->getMessage()],
+                'msg' => 'unhandled exception from server',
+                'request_id' => ''
             ]);
             $this->send($connection, $resp, $request);
         }
@@ -57,7 +68,7 @@ class ApiServer
     public function onWorkerStart(Worker $worker): void
     {
         static::$worker = $worker;
-        $this->app = new LaramanApp(base_path());
+        $this->app = new LaramanApp(LARAMAN_PATH);
         $this->app->singleton(
             \Illuminate\Contracts\Http\Kernel::class,
             Kernel::class
@@ -67,6 +78,7 @@ class ApiServer
             Handler::class
         );
         $this->kernel = $this->app->make(Kernel::class);
+        StaticFileServer::$public_path = public_path();
     }
 
     /**

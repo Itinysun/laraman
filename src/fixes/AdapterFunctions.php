@@ -1,6 +1,6 @@
 <?php
 
-use Itinysun\Laraman\Http;
+use Itinysun\Laraman\fixes\Http;
 
 
 if (! function_exists('header')) {

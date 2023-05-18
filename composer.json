@@ -12,7 +12,9 @@
     "homepage": "https://github.com/itinysun/laraman",
     "keywords": ["Laravel", "Laraman"],
     "require": {
-
+        "php": ">=8.0",
+        "ext-json": "*",
+        "workerman/workerman": "^4.0.4 || ^5.0.0"
     },
     "require-dev": {
 
@@ -21,6 +23,9 @@
         "psr-4": {
             "Itinysun\\Laraman\\": "src/"
         }
+    },
+    "suggest": {
+        "ext-event": "For better performance. "
     },
     "autoload-dev": {
         "psr-4": {
@@ -31,10 +36,7 @@
         "laravel": {
             "providers": [
                 "Itinysun\\Laraman\\LaramanServiceProvider"
-            ],
-            "aliases": {
-                "Laraman": "Itinysun\\Laraman\\Facades\\Laraman"
-            }
+            ]
         }
     }
 }

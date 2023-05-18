@@ -1,12 +1,16 @@
 <?php
 
-namespace Itinysun\Laraman\Server;
+namespace Itinysun\Laraman\server;
 
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Facade;
 
 class LaramanApp extends Application
 {
+    /**
+     * laravel don't clear facade instance cache ,so we clear ourselves
+     * @return void
+     */
     public function forgetScopedInstances(): void
     {
         foreach ($this->scopedInstances as $scoped) {

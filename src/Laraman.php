@@ -2,15 +2,11 @@
 
 namespace Itinysun\Laraman;
 
-use App\Http\Kernel;
 use Exception;
 use Illuminate\Console\Command;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\App;
-use Itinysun\Laraman\Http;
-use Itinysun\Laraman\Server\ApiServer;
+use Itinysun\Laraman\fixes\Http;
+use Itinysun\Laraman\server\ApiServer;
 use Workerman\Connection\TcpConnection;
-use Workerman\Timer;
 use Workerman\Worker;
 
 class Laraman extends Command
@@ -20,14 +16,14 @@ class Laraman extends Command
      *
      * @var string
      */
-    protected $signature = 'laraman';
+    protected  $signature = 'laraman';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Command description';
+    protected  $description = 'Command description';
 
 
 
@@ -41,24 +37,25 @@ class Laraman extends Command
     /**
      * Execute the console command.
      */
-    public function handle(): void
+    public static function handle($config): void
     {
         //
         ini_set('display_errors', 'on');
         error_reporting(E_ALL);
 
-        $this->init();
+        self::init();
 
-        $worker = $this->buildWorker();
+        $worker = self::buildWorker($config);
 
-        $worker->onWorkerStart = function ($worker) {
-            $app = new ApiServer();
-            $worker->onMessage = [$app, 'onMessage'];
-            call_user_func([$app, 'onWorkerStart'], $worker);
-        };
+        if(null!==$worker){
+            $worker->onWorkerStart = function ($worker) {
+                $app = new ApiServer();
+                $worker->onMessage = [$app, 'onMessage'];
+                call_user_func([$app, 'onWorkerStart'], $worker);
+            };
+        }
 
 
-        /*
         // Windows does not support custom processes.
         if (DIRECTORY_SEPARATOR === '/') {
             foreach (config('process', []) as $processName => $config) {
@@ -78,13 +75,12 @@ class Laraman extends Command
                 }
             }
         }
-        */
 
         Worker::runAll();
 
     }
 
-    public function buildWorker(): Worker
+    public static function buildWorker($config): Worker|null
     {
         Worker::$onMasterReload = function () {
             if (function_exists('opcache_get_status')) {
@@ -97,7 +93,7 @@ class Laraman extends Command
                 }
             }
         };
-        $config = config('laraman');
+
         Worker::$pidFile = $config['pid_file'];
         Worker::$stdoutFile = $config['stdout_file'];
         Worker::$logFile = $config['log_file'];
@@ -109,35 +105,39 @@ class Laraman extends Command
         if (property_exists(Worker::class, 'stopTimeout')) {
             Worker::$stopTimeout = $config['stop_timeout'] ?? 2;
         }
-        $worker = new Worker($config['listen'], $config['context']);
-        $propertyMap = [
-            'name',
-            'count',
-            'user',
-            'group',
-            'reusePort',
-            'transport',
-            'protocol'
-        ];
-        foreach ($propertyMap as $property) {
-            if (isset($config[$property])) {
-                $worker->$property = $config[$property];
+        if ($config['listen']) {
+            $worker = new Worker($config['listen'], $config['context']);
+            $propertyMap = [
+                'name',
+                'count',
+                'user',
+                'group',
+                'reusePort',
+                'transport',
+                'protocol'
+            ];
+            foreach ($propertyMap as $property) {
+                if (isset($config[$property])) {
+                    $worker->$property = $config[$property];
+                }
             }
+            return $worker;
         }
-        return $worker;
+        return null;
     }
 
 
 
-    public function init(): void
+    public static function init(): void
     {
+        /*
         try {
             self::checkVersion();
             self::checkFunctionsDisabled();
 
             // OK initialize the functions
-            require __DIR__ . '/AdapterFunctions.php';
-            class_alias(\Itinysun\Laraman\Http::class, \Protocols\Http::class);
+            require __DIR__ . '/fixes/AdapterFunctions.php';
+            class_alias(Http::class, \Protocols\Http::class);
             Http::init();
 
         } catch (Exception $e) {
@@ -145,6 +145,7 @@ class Laraman extends Command
             fwrite(STDERR, $e->getMessage());
             exit;
         }
+        */
 
         fwrite(STDOUT, self::NAME . ' OK' . PHP_EOL);
     }
@@ -155,7 +156,7 @@ class Laraman extends Command
      * @throws Exception
      * @return void
      */
-    private function checkVersion(): void
+    private static function checkVersion(): void
     {
         if (\PHP_MAJOR_VERSION < 8) {
             throw new Exception("* PHP version must be 8 or higher." . PHP_EOL . "* Actual PHP version: " . \PHP_VERSION . PHP_EOL);
@@ -168,7 +169,7 @@ class Laraman extends Command
      * @throws Exception
      * @return void
      */
-    private function checkFunctionsDisabled(): void
+    private static function checkFunctionsDisabled(): void
     {
 
         foreach (self::FUNCTIONS as $function) {

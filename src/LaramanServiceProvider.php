@@ -32,11 +32,6 @@ class LaramanServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../config/laraman.php', 'laraman');
-
-        // Register the service the package provides.
-        $this->app->singleton('laraman', function ($app) {
-            return new Laraman;
-        });
     }
 
 

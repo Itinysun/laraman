@@ -32,5 +32,6 @@ return [
     'status_file' => storage_path('laraman') . '/laraman.status',
     'stdout_file' => storage_path('laraman') . '/logs/stdout.log',
     'log_file' => storage_path('laraman') . '/logs/laraman.log',
-    'max_package_size' => 10 * 1024 * 1024
+    'max_package_size' => 10 * 1024 * 1024,
+    'static_file'=>true
 ];
