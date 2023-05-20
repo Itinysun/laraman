@@ -55,11 +55,11 @@ class InputBagLazy implements \IteratorAggregate, \Countable
         $server['SERVER_NAME']=$this->request->host();
         $server['SERVER_PORT']=substr($server['HTTP_HOST'],strpos($server['HTTP_HOST'],':'));
         $server['REQUEST_URI']=$this->request->path().'?'.$this->request->queryString();
-        $server['SCRIPT_NAME']='/laraman.php';
+        $server['SCRIPT_NAME']='/laraman';
         $server['SCRIPT_FILENAME']='/laraman';
         $server['PHP_SELF']='laraman';
-        $server['REQUEST_TIME_FLOAT']=0;
-        $server['REQUEST_TIME']=0;
+        $server['REQUEST_TIME_FLOAT']=microtime(true);
+        $server['REQUEST_TIME']=time();
         return $server;
     }
 

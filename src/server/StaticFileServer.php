@@ -3,12 +3,12 @@
 namespace Itinysun\Laraman\server;
 
 use Illuminate\Http\Request;
-use Workerman\Protocols\Http\Response;
+use Itinysun\Laraman\Http\Response;
 
 class StaticFileServer
 {
     public static string $public_path = '';
-    public static function resolvePath(string $path,Request $request): mixed
+    public static function resolvePath(string $path,Request $request): bool|Response
     {
 //        if (str_contains($path, '..') ||
 //            str_contains($path, "\\") ||
@@ -23,7 +23,7 @@ class StaticFileServer
             if(stripos(realpath(self::$public_path), $file)==0){
                 return (new Response())->withFile($file);
             }else{
-                return response('not allowed', 403);
+                return new Response(403,[]);
             }
         }
         return false;

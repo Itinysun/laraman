@@ -64,7 +64,7 @@ class LaramanServiceProvider extends ServiceProvider
 
         // Registering package commands.
         $this->commands([
-            Laraman::class
+        //    Laraman::class
         ]);
     }
 }
