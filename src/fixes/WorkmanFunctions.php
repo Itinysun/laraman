@@ -96,7 +96,7 @@ function worker_start($processName, $config): Worker
     }
 
     $worker->onWorkerStart = function ($worker) use ($config) {
-        require_once base_path('/support/bootstrap.php');
+        require_once base_path('/support/starter.php');
         if (isset($config['handler'])) {
             if (!class_exists($config['handler'])) {
                 echo "process error: class {$config['handler']} not exists\r\n";
@@ -108,4 +108,23 @@ function worker_start($processName, $config): Worker
         }
     };
     return $worker;
+}
+
+if (! function_exists('cpu_count')) {
+    function cpu_count(): int
+    {
+        // Windows does not support the number of processes setting.
+        if (\DIRECTORY_SEPARATOR === '\\') {
+            return 1;
+        }
+        $count = 4;
+        if (\is_callable('shell_exec')) {
+            if (\strtolower(PHP_OS) === 'darwin') {
+                $count = (int)\shell_exec('sysctl -n machdep.cpu.core_count');
+            } else {
+                $count = (int)\shell_exec('nproc');
+            }
+        }
+        return $count > 0 ? $count : 2;
+    }
 }

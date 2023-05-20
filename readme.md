@@ -12,7 +12,9 @@ This is where your description should go. Take a look at [contributing.md](contr
 Via Composer
 
 ``` bash
-$ composer require itinysun/laraman
+composer require itinysun/laraman
+
+php artisan vendor:publish --tag=laraman.install --force
 ```
 
 ## Usage

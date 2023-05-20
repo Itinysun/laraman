@@ -1,6 +1,6 @@
 <?php
 
-namespace Itinysun\Laraman\server;
+namespace Itinysun\Laraman\Server;
 
 use App\Exceptions\Handler;
 use App\Http\Kernel;
@@ -16,7 +16,7 @@ use Workerman\Connection\TcpConnection;
 use Workerman\Protocols\Http\Request as WorkmanRequest;
 use Workerman\Worker;
 
-class ApiServer
+class HttpServer
 {
 
     protected static ?Worker $worker = null;
@@ -35,7 +35,7 @@ class ApiServer
     {
         $request = Request::createFromBase(\Itinysun\Laraman\Http\Request::createFromWorkmanRequest($workmanRequest));
 
-        if (str_contains($request->path(), '.')) {
+        if (StaticFileServer::$enabled && str_contains($request->path(), '.')) {
             $resp = StaticFileServer::resolvePath($request->path(),$request);
             if(false!==$resp){
                 $this->send($connection,$resp,$request);
@@ -101,7 +101,7 @@ class ApiServer
     public function onWorkerStart(Worker $worker): void
     {
         static::$worker = $worker;
-        $this->app = new LaramanApp(LARAMAN_PATH);
+        $this->app = new LaramanApp(base_path());
         $this->app->singleton(
             \Illuminate\Contracts\Http\Kernel::class,
             LaramanKernel::class
@@ -112,8 +112,7 @@ class ApiServer
         );
         $this->kernel = $this->app->make(\Illuminate\Contracts\Http\Kernel::class);
         $this->fixUploadedFile();
-        StaticFileServer::$public_path = public_path();
-
+        StaticFileServer::init();
     }
 
     /**

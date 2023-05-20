@@ -5,7 +5,8 @@ namespace Itinysun\Laraman;
 use Exception;
 use Illuminate\Console\Command;
 use Itinysun\Laraman\fixes\Http;
-use Itinysun\Laraman\server\ApiServer;
+use Itinysun\Laraman\Server\HttpServer;
+use Itinysun\Laraman\Server\LaramanServer;
 use Workerman\Connection\TcpConnection;
 use Workerman\Worker;
 
@@ -23,33 +24,42 @@ class Laraman extends Command
      *
      * @var string
      */
-    protected  $description = 'Command description';
+    protected  $description = 'run laraman server';
 
-
-
-    public const VERSION = "0.6.1";
+    public const VERSION = "0.0.1";
 
     public const NAME = "laraman v". self::VERSION;
-
-    private const FUNCTIONS = ['header', 'header_remove', 'headers_sent', 'http_response_code', 'setcookie', 'session_create_id', 'session_id', 'session_name', 'session_save_path', 'session_status', 'session_start', 'session_write_close', 'session_regenerate_id', 'set_time_limit'];
-
-
     /**
      * Execute the console command.
      */
-    public static function handle($config): void
+    protected function start($config): void
     {
-        //
         ini_set('display_errors', 'on');
         error_reporting(E_ALL);
+        $this->info(self::NAME);
 
-        self::init();
+        require_once __DIR__.'/fixes/WorkmanFunctions.php';
 
-        $worker = self::buildWorker($config);
+        if(!isset($config['count']) || $config['count']===0){
+            $config['count'] = cpu_count()*4;
+        }
+        try{
+            collect([$config['pid_file'],$config['status_file'],$config['stdout_file'],$config['log_file']])->map(function ($path){
+                $dir = dirname($path);
+                if(!is_dir($dir))
+                    mkdir($dir);
+            });
+        }catch (Exception $e){
+            $this->error('can not create dir for runtime');
+            $this->error($e->getMessage());
+            return;
+        }
+
+        $worker = $this->buildWorker($config);
 
         if(null!==$worker){
             $worker->onWorkerStart = function ($worker) {
-                $app = new ApiServer();
+                $app = new HttpServer();
                 $worker->onMessage = [$app, 'onMessage'];
                 call_user_func([$app, 'onWorkerStart'], $worker);
             };
@@ -79,8 +89,7 @@ class Laraman extends Command
         Worker::runAll();
 
     }
-
-    public static function buildWorker($config): Worker|null
+    public function buildWorker($config): Worker|null
     {
         Worker::$onMasterReload = function () {
             if (function_exists('opcache_get_status')) {
@@ -126,64 +135,16 @@ class Laraman extends Command
         return null;
     }
 
-
-
-    public static function init(): void
-    {
-        /*
-        try {
-            self::checkVersion();
-            self::checkFunctionsDisabled();
-
-            // OK initialize the functions
-            require __DIR__ . '/fixes/AdapterFunctions.php';
-            class_alias(Http::class, \Protocols\Http::class);
-            Http::init();
-
-        } catch (Exception $e) {
-            fwrite(STDERR, self::NAME . ' Error:' . PHP_EOL);
-            fwrite(STDERR, $e->getMessage());
-            exit;
-        }
-        */
-
-        fwrite(STDOUT, self::NAME . ' OK' . PHP_EOL);
-    }
-
     /**
-     * Check PHP version
-     *
-     * @throws Exception
-     * @return void
+     * Execute the console command.
      */
-    private static function checkVersion(): void
+    public function handle(): void
     {
-        if (\PHP_MAJOR_VERSION < 8) {
-            throw new Exception("* PHP version must be 8 or higher." . PHP_EOL . "* Actual PHP version: " . \PHP_VERSION . PHP_EOL);
+        if(!app()->resolved('laraman_console')){
+            $this->error('please dont use artisan console, use "php laraman" to start up');
+            return;
         }
-    }
-
-    /**
-     * Check that functions are disabled in php.ini
-     *
-     * @throws Exception
-     * @return void
-     */
-    private static function checkFunctionsDisabled(): void
-    {
-
-        foreach (self::FUNCTIONS as $function) {
-            if (\function_exists($function)) {
-                throw new Exception("Functions not disabled in php.ini." . PHP_EOL . self::showConfiguration());
-            }
-        }
-    }
-
-    private static function showConfiguration(): string
-    {
-        $iniPath = \php_ini_loaded_file();
-        $methods = \implode(',', self::FUNCTIONS);
-
-        return "Add in file: $iniPath" . PHP_EOL . "disable_functions=$methods" . PHP_EOL;
+        $config = config('laraman.server');
+        $this->start($config);
     }
 }

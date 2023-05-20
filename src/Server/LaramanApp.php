@@ -1,6 +1,6 @@
 <?php
 
-namespace Itinysun\Laraman\server;
+namespace Itinysun\Laraman\Server;
 
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Facade;
