@@ -4,9 +4,11 @@ namespace Itinysun\Laraman;
 
 use Exception;
 use Illuminate\Console\Command;
+use Itinysun\Laraman\Console\ConsoleApp;
 use Itinysun\Laraman\fixes\Http;
 use Itinysun\Laraman\Server\HttpServer;
 use Itinysun\Laraman\Server\LaramanServer;
+use Itinysun\Laraman\Server\StaticFileServer;
 use Workerman\Connection\TcpConnection;
 use Workerman\Worker;
 
@@ -32,13 +34,12 @@ class Laraman extends Command
     /**
      * Execute the console command.
      */
-    protected function start($config): void
+    protected function startHttpServer($config): void
     {
         ini_set('display_errors', 'on');
         error_reporting(E_ALL);
         $this->info(self::NAME);
 
-        require_once __DIR__.'/fixes/WorkmanFunctions.php';
 
         if(!isset($config['count']) || $config['count']===0){
             $config['count'] = cpu_count()*4;
@@ -144,7 +145,10 @@ class Laraman extends Command
             $this->error('please dont use artisan console, use "php laraman" to start up');
             return;
         }
-        $config = config('laraman.server');
-        $this->start($config);
+        $app = ConsoleApp::getInstance();
+        $configuration = $app->make('config');
+
+        $config = $configuration->get('laraman.server');
+        $this->startHttpServer($config);
     }
 }

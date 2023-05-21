@@ -1,6 +1,22 @@
 <?php
-use Workerman\Worker;
+
+use Illuminate\Container\Container;
 use Illuminate\Support\Facades\App;
+use Itinysun\Laraman\Console\ConsoleApp;
+use Workerman\Worker;
+
+
+function app($abstract = null, array $parameters = [])
+{
+    $instance = Container::getInstance();
+    if(!$instance->resolved('app'))
+        $instance= ConsoleApp::getInstance();
+    if (is_null($abstract)) {
+        return $instance;
+    }
+
+    return $instance->make($abstract, $parameters);
+}
 
 /**
  * Copy dir

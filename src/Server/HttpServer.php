@@ -112,6 +112,7 @@ class HttpServer
         );
         $this->kernel = $this->app->make(\Illuminate\Contracts\Http\Kernel::class);
         $this->fixUploadedFile();
+
         StaticFileServer::init();
     }
 
@@ -170,7 +171,7 @@ class HttpServer
 
     protected function fixUploadedFile(): void
     {
-        $fixesDir = dirname(__DIR__).'/fixes';
+        $fixesDir = dirname(__DIR__) . '../../fixes';
         if (! function_exists('\\Symfony\\Component\\HttpFoundation\\File\\is_uploaded_file')) {
             require $fixesDir.'/fix-symfony-file-validation.php';
         }

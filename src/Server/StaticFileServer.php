@@ -6,6 +6,7 @@ use Fruitcake\Cors\CorsService;
 use Illuminate\Http\Middleware\HandleCors;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
+use Itinysun\Laraman\Console\ConsoleApp;
 use Itinysun\Laraman\Http\Response;
 
 class StaticFileServer
@@ -20,7 +21,6 @@ class StaticFileServer
     public static function init(): void
     {
         $config = config('laraman.static');
-
         static::$isSafePath = function ($path) {
             return false;
         };
@@ -38,14 +38,14 @@ class StaticFileServer
                 else {
                     $onlyPath = static::$allowed[0];
                     static::$isSafePath = function ($path) use ($onlyPath) {
-                        return stripos($onlyPath, $path) == 0;
+                        return stripos($path,$onlyPath) == 0;
                     };
                 }
             } else {
                 $collect = collect(static::$allowed);
                 static::$isSafePath = function ($path) use ($collect) {
                     return $collect->contains(function ($v) use ($path) {
-                        return stripos($v, $path) == 0;
+                        return stripos($path,$v) == 0;
                     });
                 };
             }
@@ -63,12 +63,6 @@ class StaticFileServer
 
     public static function resolvePath(string $path, Request $request): bool|Response
     {
-//        if (str_contains($path, '..') ||
-//            str_contains($path, "\\") ||
-//            str_contains($path, "\0")) {
-//            return response('not allowed', 403);
-//        }
-
         $path = public_path($path);
         $file = realpath($path);
         clearstatcache($file);
@@ -91,6 +85,7 @@ class StaticFileServer
                         return (new Response(200, $response->headers->all()))->withFile($file);
                     }
                 }
+                return (new Response(200))->withFile($file);
             } else {
                 return new Response(403, []);
             }

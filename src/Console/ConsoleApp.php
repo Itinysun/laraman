@@ -5,11 +5,51 @@ namespace Itinysun\Laraman\Console;
 use Illuminate\Container\Container;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Foundation\Application;
-use Illuminate\Foundation\Mix;
 use Illuminate\Foundation\PackageManifest;
+use Illuminate\Routing\RoutingServiceProvider;
 
 class ConsoleApp extends Application
 {
+    /*
+     * !important
+     */
+    protected static $instance;
+    public function runServerCommand():int{
+
+        $this->singleton(
+            \Illuminate\Contracts\Console\Kernel::class,
+            \Itinysun\Laraman\Console\TinyKernel::class
+        );
+
+        $this->singleton(
+            \Illuminate\Contracts\Debug\ExceptionHandler::class,
+            \App\Exceptions\Handler::class
+        );
+
+
+        $kernel = $this->make(\Illuminate\Contracts\Console\Kernel::class);
+
+        return $kernel->handle(
+            $input = new \Symfony\Component\Console\Input\ArgvInput(['laraman','laraman']),
+            new \Symfony\Component\Console\Output\ConsoleOutput
+        );
+    }
+
+    public function bootstrapWith(array $bootstrappers): void
+    {
+        $this->hasBeenBootstrapped = true;
+
+        foreach ($bootstrappers as $bootstrapper) {
+
+            $this->make($bootstrapper)->bootstrap($this);
+
+        }
+    }
+    protected function registerBaseServiceProviders(): void
+    {
+        $this->register(new RoutingServiceProvider($this));
+    }
+
     protected function registerBaseBindings(): void
     {
         static::setInstance($this);
@@ -17,7 +57,6 @@ class ConsoleApp extends Application
         $this->instance('laraman_console', $this);
 
         $this->instance(Container::class, $this);
-        $this->singleton(Mix::class);
 
         $this->singleton(PackageManifest::class, fn () => new PackageManifest(
             new Filesystem, $this->basePath(), $this->getCachedPackagesPath()
