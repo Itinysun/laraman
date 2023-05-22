@@ -41,7 +41,7 @@ class HttpServer
                 if (StaticFileServer::$enabled && str_contains($request->path(), '.')) {
                     $result = StaticFileServer::tryServeFile($request);
                     if(null!==$result){
-                        $this->send($connection,$result,$request);
+                        $this->send($connection,$result,$workmanRequest);
                         return ;
                     }
                 }

@@ -81,7 +81,7 @@ class StaticFileServer
         }
     }
 
-    public static function resolvePath(string $path): bool|null
+    public static function resolvePath(string $path): bool|null|string
     {
         if (preg_match('/%[0-9a-f]{2}/i', $path)) {
             $path = urldecode($path);
@@ -100,7 +100,7 @@ class StaticFileServer
         return null;
     }
 
-    public static function getResponse(?string $file, array $headers=[]): Response
+    public static function getResponse(string|bool $file, array $headers=[]): Response
     {
         if($file===false){
             abort(404,'access deny',$headers);
