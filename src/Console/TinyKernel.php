@@ -3,13 +3,13 @@
 namespace Itinysun\Laraman\Console;
 
 
-use Itinysun\Laraman\Console\TinyArtisan as Artisan;
-
 use Illuminate\Contracts\Console\Kernel as KernelContract;
 use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\InteractsWithTime;
-use Itinysun\Laraman\Laraman;
+use Itinysun\Laraman\Command\Laraman;
+use Itinysun\Laraman\Command\Process;
+use Itinysun\Laraman\Console\TinyArtisan as Artisan;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Exception\CommandNotFoundException;
 use Symfony\Component\Console\Input\InputInterface;
@@ -100,6 +100,7 @@ class TinyKernel implements KernelContract
     protected function commands(): void
     {
         $this->registerCommand(new Laraman());
+        $this->registerCommand(new Process());
     }
 
     /**

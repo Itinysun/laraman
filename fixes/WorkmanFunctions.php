@@ -5,6 +5,14 @@ use Illuminate\Support\Facades\App;
 use Itinysun\Laraman\Console\ConsoleApp;
 use Workerman\Worker;
 
+function isWindows(): bool
+{
+    return DIRECTORY_SEPARATOR !== "/";
+}
+
+function runtime_path(){
+    return config('server.runtime_path');
+}
 
 function app($abstract = null, array $parameters = [])
 {

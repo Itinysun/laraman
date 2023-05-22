@@ -29,8 +29,9 @@ class ConsoleApp extends Application
 
         $kernel = $this->make(\Illuminate\Contracts\Console\Kernel::class);
 
+
         return $kernel->handle(
-            $input = new \Symfony\Component\Console\Input\ArgvInput(['laraman','laraman']),
+            $input = new OnlyArgvInput(),
             new \Symfony\Component\Console\Output\ConsoleOutput
         );
     }

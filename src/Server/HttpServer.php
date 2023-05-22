@@ -53,11 +53,10 @@ class HttpServer
                 $this->send($connection, $response, $workmanRequest);
 
                 $this->prepareNextRequest($request);
-
             } catch (Throwable $e) {
+                report($e);
                 $response = $this->exceptionHandler->render($request,$e);
-                $this->send($connection, new Response(200,$response->headers->all(),$response->getContent()), $workmanRequest);
-
+                $this->send($connection, Response::fromLaravelResponse($response), $workmanRequest);
                 //clear state after send exception
                 $this->prepareNextRequest($request);
             }
@@ -118,6 +117,7 @@ class HttpServer
         $this->kernel = $this->app->make(\Illuminate\Contracts\Http\Kernel::class);
         $this->exceptionHandler = $this->app->make(ExceptionHandler::class);
         $this->fixUploadedFile();
+
         StaticFileServer::init();
     }
 
@@ -143,14 +143,11 @@ class HttpServer
 
     public function getResponse(Request $request): Response
     {
-
         $response = $this->kernel->handle(
             $request
         );
-
         $this->kernel->terminate($request, $response);
-
-        return new Response($response->getStatusCode(),$response->headers->all(),$response->content());
+        return Response::fromLaravelResponse($response);
     }
 
     protected function flushNotificationChannelManager(): void

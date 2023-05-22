@@ -1,6 +1,6 @@
 <?php
 
-namespace Itinysun\Laraman;
+namespace Itinysun\Laraman\Command;
 
 use Exception;
 use Illuminate\Console\Command;
@@ -8,7 +8,6 @@ use Itinysun\Laraman\Console\ConsoleApp;
 use Itinysun\Laraman\fixes\Http;
 use Itinysun\Laraman\Server\HttpServer;
 use Itinysun\Laraman\Server\LaramanServer;
-use Itinysun\Laraman\Server\StaticFileServer;
 use Workerman\Connection\TcpConnection;
 use Workerman\Worker;
 
@@ -36,22 +35,30 @@ class Laraman extends Command
      */
     protected function startHttpServer($config): void
     {
-        ini_set('display_errors', 'on');
-        error_reporting(E_ALL);
         $this->info(self::NAME);
-
 
         if(!isset($config['count']) || $config['count']===0){
             $config['count'] = cpu_count()*4;
         }
+
         try{
             collect([$config['pid_file'],$config['status_file'],$config['stdout_file'],$config['log_file']])->map(function ($path){
-                $dir = dirname($path);
-                if(!is_dir($dir))
-                    mkdir($dir);
+                if(!empty($path)){
+                    $dir = dirname($path);
+                    if(!is_dir($dir)){
+                        if(isWindows()){
+                            mkdir($dir);
+                        }else{
+                            if(!mkdir($dir, 0777, true)) {
+                                throw new Exception('create dir=> '.$dir. ' failed');
+                            }
+                        }
+                        $this->info('create folder for workman runtime => '.$dir);
+                    }
+                }
             });
         }catch (Exception $e){
-            $this->error('can not create dir for runtime');
+            $this->error('Failed to create runtime logs directory. Please check the permission.');
             $this->error($e->getMessage());
             return;
         }
@@ -92,29 +99,34 @@ class Laraman extends Command
     }
     public function buildWorker($config): Worker|null
     {
-        Worker::$onMasterReload = function () {
-            if (function_exists('opcache_get_status')) {
-                if ($status = opcache_get_status()) {
-                    if (isset($status['scripts']) && $scripts = $status['scripts']) {
-                        foreach (array_keys($scripts) as $file) {
-                            opcache_invalidate($file, true);
+        if(!isWindows()){
+            Worker::$onMasterReload = function () {
+                if (function_exists('opcache_get_status') && function_exists('opcache_invalidate')) {
+                    if ($status = \opcache_get_status()) {
+                        if (isset($status['scripts']) && $scripts = $status['scripts']) {
+                            foreach (array_keys($scripts) as $file) {
+                                \opcache_invalidate($file, true);
+                            }
                         }
                     }
                 }
-            }
-        };
+            };
 
-        Worker::$pidFile = $config['pid_file'];
-        Worker::$stdoutFile = $config['stdout_file'];
-        Worker::$logFile = $config['log_file'];
-        Worker::$eventLoopClass = $config['event_loop'] ?? '';
-        TcpConnection::$defaultMaxPackageSize = $config['max_package_size'] ?? 10 * 1024 * 1024;
-        if (property_exists(Worker::class, 'statusFile')) {
-            Worker::$statusFile = $config['status_file'] ?? '';
+            Worker::$pidFile = $config['runtime_path'].'/laraman.pid';
+            Worker::$stdoutFile = $config['runtime_path']. '/stdout.log';
+            Worker::$logFile = $config['runtime_path'].'/laraman.log';
+            Worker::$eventLoopClass = $config['event_loop'] ?? '';
+
+            TcpConnection::$defaultMaxPackageSize = $config['max_package_size'] ?? 10 * 1024 * 1024;
+            if (property_exists(Worker::class, 'statusFile')) {
+                Worker::$statusFile = $config['status_file'] ?? '';
+            }
+            if (property_exists(Worker::class, 'stopTimeout')) {
+                Worker::$stopTimeout = $config['stop_timeout'] ?? 2;
+            }
         }
-        if (property_exists(Worker::class, 'stopTimeout')) {
-            Worker::$stopTimeout = $config['stop_timeout'] ?? 2;
-        }
+
+
         if ($config['listen']) {
             $worker = new Worker($config['listen'], $config['context']);
             $propertyMap = [

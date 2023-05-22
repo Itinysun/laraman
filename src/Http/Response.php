@@ -14,6 +14,7 @@
 
 namespace Itinysun\Laraman\Http;
 
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Throwable;
 
 use function filemtime;
@@ -83,5 +84,14 @@ class Response extends \Workerman\Protocols\Http\Response
             $this->exception = $exception;
         }
         return $this->exception;
+    }
+
+    public static function fromLaravelResponse(mixed $response): static
+    {
+        $resp = new static($response->getStatusCode(),$response->headers->all(),$response->getContent());
+        if($response instanceof BinaryFileResponse && null!==$response->getFile()){
+            $resp->withFile($response->getFile());
+        }
+        return $resp;
     }
 }

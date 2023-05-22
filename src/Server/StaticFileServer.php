@@ -4,10 +4,8 @@ namespace Itinysun\Laraman\Server;
 
 use Exception;
 use Fruitcake\Cors\CorsService;
-use Illuminate\Http\Middleware\HandleCors;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
-use Itinysun\Laraman\Console\ConsoleApp;
 use Itinysun\Laraman\Http\Response;
 
 class StaticFileServer
