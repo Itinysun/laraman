@@ -4,5 +4,5 @@ return [
     'allowed'=>[
         public_path()
     ],
-    'cors'=>true
+    'support_php'=>false
 ];

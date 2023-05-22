@@ -2,6 +2,7 @@
 
 namespace Itinysun\Laraman\Server;
 
+use Exception;
 use Fruitcake\Cors\CorsService;
 use Illuminate\Http\Middleware\HandleCors;
 use Illuminate\Http\Request;
@@ -18,16 +19,18 @@ class StaticFileServer
 
     public static array $cors_paths = [];
 
+    public static array $config=[];
+
     public static function init(): void
     {
-        $config = config('laraman.static');
+        static::$config= config('laraman.static');
         static::$isSafePath = function ($path) {
             return false;
         };
 
-        if ($config['enable'] && !empty($config['allowed'])) {
+        if (static::$config['enable'] && !empty(static::$config['allowed'])) {
             static::$enabled = true;
-            foreach ($config['allowed'] as $v) {
+            foreach (static::$config['allowed'] as $v) {
                 static::$allowed[] = realpath($v);
             }
             if (count(static::$allowed) == 1) {
@@ -52,45 +55,63 @@ class StaticFileServer
         }
 
         $cors_config = config('cors');
-
-        if ($config['cors']) {
-            static::$cors = App::make(CorsService::class, $cors_config);
-        } else {
-            static::$cors = null;
-        }
+        static::$cors = App::make(CorsService::class, $cors_config);
         static::$cors_paths = config('cors.paths', []);
     }
 
-    public static function resolvePath(string $path, Request $request): bool|Response
+    public static function tryServeFile(Request $request): ?Response
     {
+        $file = self::resolvePath($request->path());
+        if($file === null)
+            return null;
+        if (static::matchCorsPath($request)) {
+            if (static::$cors->isPreflightRequest($request)) {
+                $response = static::$cors->handlePreflightRequest($request);
+                static::$cors->varyHeader($response, 'Access-Control-Request-Method');
+                return new Response(200, $response->headers->all());
+            }
+            $response = new \Symfony\Component\HttpFoundation\Response();
+            if ($request->getMethod() === 'OPTIONS') {
+                static::$cors->varyHeader($response, 'Access-Control-Request-Method');
+            }
+            $response = static::$cors->addActualRequestHeaders($response, $request);
+            return self::getResponse($file,$response->headers->all());
+        }else{
+            return self::getResponse($file);
+        }
+    }
+
+    public static function resolvePath(string $path): bool|null
+    {
+        if (preg_match('/%[0-9a-f]{2}/i', $path)) {
+            $path = urldecode($path);
+        }
         $path = public_path($path);
         $file = realpath($path);
         clearstatcache($file);
         if (file_exists($file)) {
             $checkSafePath = static::$isSafePath;
             if ($checkSafePath($file)) {
-                $cors = static::$cors;
-                if ($cors !== null) {
-                    if (static::hasMatchingPath($request)) {
-                        if (static::$cors->isPreflightRequest($request)) {
-                            $response = static::$cors->handlePreflightRequest($request);
-                            static::$cors->varyHeader($response, 'Access-Control-Request-Method');
-                            return new Response(200, $response->headers->all());
-                        }
-                        $response = new \Symfony\Component\HttpFoundation\Response();
-                        if ($request->getMethod() === 'OPTIONS') {
-                            static::$cors->varyHeader($response, 'Access-Control-Request-Method');
-                        }
-                        $response = static::$cors->addActualRequestHeaders($response, $request);
-                        return (new Response(200, $response->headers->all()))->withFile($file);
-                    }
-                }
-                return (new Response(200))->withFile($file);
+                return $file;
             } else {
-                return new Response(403, []);
+                return false;
             }
         }
-        return false;
+        return null;
+    }
+
+    public static function getResponse(?string $file, array $headers=[]): Response
+    {
+        if($file===false){
+            abort(404,'access deny',$headers);
+        }
+        if (pathinfo($file, PATHINFO_EXTENSION) === 'php') {
+            if(self::$config['support_php'])
+                return (new Response(200, $headers,self::execPhpFile($file)));
+            else
+                abort(403,'not supported',$headers);
+        }
+        return (new Response(200,$headers))->withFile($file);
     }
 
 
@@ -100,7 +121,7 @@ class StaticFileServer
      * @param Request $request
      * @return bool
      */
-    protected static function hasMatchingPath(Request $request): bool
+    protected static function matchCorsPath(Request $request): bool
     {
         $paths = static::getPathsByHost($request->getHost());
 
@@ -133,5 +154,22 @@ class StaticFileServer
         return array_filter(static::$cors_paths, function ($path) {
             return is_string($path);
         });
+    }
+
+    /**
+     * ExecPhpFile.
+     * @param string $file
+     * @return false|string
+     */
+    public static function execPhpFile(string $file): bool|string
+    {
+        ob_start();
+        // Try to include php file.
+        try {
+            include $file;
+        } catch (Exception $e) {
+            echo $e;
+        }
+        return ob_get_clean();
     }
 }

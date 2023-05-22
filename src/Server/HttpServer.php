@@ -25,6 +25,8 @@ class HttpServer
 
     protected Kernel $kernel;
 
+    protected ExceptionHandler $exceptionHandler;
+
 
     /**
      * OnMessage.
@@ -33,33 +35,36 @@ class HttpServer
      */
     public function onMessage(mixed $connection,WorkmanRequest $workmanRequest)
     {
-        $request = Request::createFromBase(\Itinysun\Laraman\Http\Request::createFromWorkmanRequest($workmanRequest));
+        try{
+            $request = Request::createFromBase(\Itinysun\Laraman\Http\Request::createFromWorkmanRequest($workmanRequest));
+            try {
+                if (StaticFileServer::$enabled && str_contains($request->path(), '.')) {
+                    $result = StaticFileServer::tryServeFile($request);
+                    if(null!==$result){
+                        $this->send($connection,$result,$request);
+                        return ;
+                    }
+                }
 
-        if (StaticFileServer::$enabled && str_contains($request->path(), '.')) {
-            $resp = StaticFileServer::resolvePath($request->path(),$request);
-            if(false!==$resp){
-                $this->send($connection,$resp,$request);
-                return null;
+                $this->refreshTelescope($request);
+
+                $response = $this->getResponse($request);
+
+                $this->send($connection, $response, $workmanRequest);
+
+                $this->prepareNextRequest($request);
+
+            } catch (Throwable $e) {
+                $response = $this->exceptionHandler->render($request,$e);
+                $this->send($connection, new Response(200,$response->headers->all(),$response->getContent()), $workmanRequest);
+
+                //clear state after send exception
+                $this->prepareNextRequest($request);
             }
+        }catch (Throwable $e){
+            $message = $this->app->hasDebugModeEnabled() ? $e->getMessage() : 'server error';
+            $this->send($connection,new Response(500,[],$message),$workmanRequest);
         }
-
-
-        try {
-
-            $this->refreshTelescope($request);
-
-            $response = $this->getResponse($request);
-            $this->send($connection, $response, $request);
-        } catch (Throwable $e) {
-            $resp = json_encode([
-                'code' => 500,
-                'data' => ['code' => $e->getCode(), 'msg' => $e->getMessage()],
-                'msg' => 'unhandled exception from server',
-                'request_id' => ''
-            ]);
-            $this->send($connection, new Response(200,[],$resp), $request);
-        }
-        $this->prepareNextRequest($request);
         return null;
     }
 
@@ -111,8 +116,8 @@ class HttpServer
             Handler::class
         );
         $this->kernel = $this->app->make(\Illuminate\Contracts\Http\Kernel::class);
+        $this->exceptionHandler = $this->app->make(ExceptionHandler::class);
         $this->fixUploadedFile();
-
         StaticFileServer::init();
     }
 
@@ -120,14 +125,14 @@ class HttpServer
      * Send.
      * @param TcpConnection|mixed $connection
      * @param Response $response
-     * @param Request $request
+     * @param WorkmanRequest $request
      * @return void
      */
-    protected function send(mixed $connection, Response $response, Request $request): void
+    protected function send(mixed $connection, Response $response, WorkmanRequest $request): void
     {
         $keepAlive = $request->header('connection');
 
-        if (($keepAlive === null && $request->getProtocolVersion() === '1.1')
+        if (($keepAlive === null && $request->protocolVersion() === '1.1')
             || $keepAlive === 'keep-alive' || $keepAlive === 'Keep-Alive'
         ) {
             $connection->send($response);
