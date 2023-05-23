@@ -14,7 +14,7 @@ class ConsoleApp extends Application
      * !important
      */
     protected static $instance;
-    public function runServerCommand():int{
+    public function runServerCommand(array $command=[]):int{
 
         $this->singleton(
             \Illuminate\Contracts\Console\Kernel::class,
@@ -31,7 +31,7 @@ class ConsoleApp extends Application
 
 
         return $kernel->handle(
-            $input = new OnlyArgvInput(),
+            $input = new OnlyArgvInput($command),
             new \Symfony\Component\Console\Output\ConsoleOutput
         );
     }

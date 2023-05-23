@@ -5,9 +5,7 @@ namespace Itinysun\Laraman\Command;
 use Exception;
 use Illuminate\Console\Command;
 use Itinysun\Laraman\Console\ConsoleApp;
-use Itinysun\Laraman\fixes\Http;
 use Itinysun\Laraman\Server\HttpServer;
-use Itinysun\Laraman\Server\LaramanServer;
 use Workerman\Connection\TcpConnection;
 use Workerman\Worker;
 
@@ -30,76 +28,37 @@ class Laraman extends Command
     public const VERSION = "0.0.1";
 
     public const NAME = "laraman v". self::VERSION;
+
     /**
      * Execute the console command.
      */
-    protected function startHttpServer($config): void
+    public function handle(): void
     {
-        $this->info(self::NAME);
-
-        if(!isset($config['count']) || $config['count']===0){
-            $config['count'] = cpu_count()*4;
-        }
-
-        try{
-            collect([$config['pid_file'],$config['status_file'],$config['stdout_file'],$config['log_file']])->map(function ($path){
-                if(!empty($path)){
-                    $dir = dirname($path);
-                    if(!is_dir($dir)){
-                        if(isWindows()){
-                            mkdir($dir);
-                        }else{
-                            if(!mkdir($dir, 0777, true)) {
-                                throw new Exception('create dir=> '.$dir. ' failed');
-                            }
-                        }
-                        $this->info('create folder for workman runtime => '.$dir);
-                    }
-                }
-            });
-        }catch (Exception $e){
-            $this->error('Failed to create runtime logs directory. Please check the permission.');
-            $this->error($e->getMessage());
+        if(!app()->resolved('laraman_console')){
+            $this->error('please dont use artisan console, use "php laraman" to start up');
             return;
         }
+        $this->info(self::NAME);
 
-        $worker = $this->buildWorker($config);
-
-        if(null!==$worker){
-            $worker->onWorkerStart = function ($worker) {
-                $app = new HttpServer();
-                $worker->onMessage = [$app, 'onMessage'];
-                call_user_func([$app, 'onWorkerStart'], $worker);
-            };
-        }
-
-
-        // Windows does not support custom processes.
-        if (DIRECTORY_SEPARATOR === '/') {
-            foreach (config('process', []) as $processName => $config) {
-                worker_start($processName, $config);
+        $processes = config('laraman.server.processes');
+        if (isWindows()) {
+            $processFiles = [];
+            foreach ($processes as $pname){
+                $processFiles[]=$this->buildBootstrapWindows($pname);
             }
-            foreach (config('plugin', []) as $firm => $projects) {
-                foreach ($projects as $name => $project) {
-                    if (!is_array($project)) {
-                        continue;
-                    }
-                    foreach ($project['process'] ?? [] as $processName => $config) {
-                        worker_start("plugin.$firm.$name.$processName", $config);
-                    }
-                }
-                foreach ($projects['process'] ?? [] as $processName => $config) {
-                    worker_start("plugin.$firm.$processName", $config);
+            echo "\r\n";
+            $resource = $this->open_processes($processFiles);
+            while (1) {
+                sleep(1);
+                if (!empty($monitor) && $monitor->checkAllFilesChange()) {
+                    $status = proc_get_status($resource);
+                    $pid = $status['pid'];
+                    shell_exec("taskkill /F /T /PID $pid");
+                    proc_close($resource);
+                    $resource = $this->open_processes($processFiles);
                 }
             }
-        }
-
-        Worker::runAll();
-
-    }
-    public function buildWorker($config): Worker|null
-    {
-        if(!isWindows()){
+        }else{
             Worker::$onMasterReload = function () {
                 if (function_exists('opcache_get_status') && function_exists('opcache_invalidate')) {
                     if ($status = \opcache_get_status()) {
@@ -111,56 +70,43 @@ class Laraman extends Command
                     }
                 }
             };
-
-            Worker::$pidFile = $config['runtime_path'].'/laraman.pid';
-            Worker::$stdoutFile = $config['runtime_path']. '/stdout.log';
-            Worker::$logFile = $config['runtime_path'].'/laraman.log';
-            Worker::$eventLoopClass = $config['event_loop'] ?? '';
-
-            TcpConnection::$defaultMaxPackageSize = $config['max_package_size'] ?? 10 * 1024 * 1024;
-            if (property_exists(Worker::class, 'statusFile')) {
-                Worker::$statusFile = $config['status_file'] ?? '';
-            }
-            if (property_exists(Worker::class, 'stopTimeout')) {
-                Worker::$stopTimeout = $config['stop_timeout'] ?? 2;
-            }
         }
 
-
-        if ($config['listen']) {
-            $worker = new Worker($config['listen'], $config['context']);
-            $propertyMap = [
-                'name',
-                'count',
-                'user',
-                'group',
-                'reusePort',
-                'transport',
-                'protocol'
-            ];
-            foreach ($propertyMap as $property) {
-                if (isset($config[$property])) {
-                    $worker->$property = $config[$property];
-                }
-            }
-            return $worker;
-        }
-        return null;
+        Worker::runAll();
     }
 
-    /**
-     * Execute the console command.
-     */
-    public function handle(): void
+    protected function open_processes($processFiles)
     {
-        if(!app()->resolved('laraman_console')){
-            $this->error('please dont use artisan console, use "php laraman" to start up');
-            return;
+        $cmd = '"' . PHP_BINARY . '" ' . implode(' ', $processFiles);
+        $descriptors = [STDIN, STDOUT, STDOUT];
+        $resource = proc_open($cmd, $descriptors, $pipes, null, null, ['bypass_shell' => true]);
+        if (!$resource) {
+            exit("Can not execute $cmd\r\n");
         }
-        $app = ConsoleApp::getInstance();
-        $configuration = $app->make('config');
+        return $resource;
+    }
+    protected function buildBootstrapWindows($processName): string
+    {
+        $basePath = base_path();
+        $fileContent = <<<EOF
+        #!/usr/bin/env php
+        <?php
+        /*
+         * Please don't edit this file,this is auto generate by laraman
+         */
 
-        $config = $configuration->get('laraman.server');
-        $this->startHttpServer($config);
+        use Illuminate\Container\Container;
+
+        require_once '$basePath/vendor/itinysun/laraman/fixes/WorkmanFunctions.php';
+
+        require '$basePath/vendor/autoload.php';
+
+        \$app = new \Itinysun\Laraman\Console\ConsoleApp('$basePath');
+        \$status = \$app->runServerCommand(['laraman', 'process', '$processName']);
+        exit(\$status);
+        EOF;
+        $processFile = storage_path('laraman') . DIRECTORY_SEPARATOR . "start_$processName.php";
+        file_put_contents($processFile, $fileContent);
+        return $processFile;
     }
 }

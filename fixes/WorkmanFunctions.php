@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Container\Container;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\App;
 use Itinysun\Laraman\Console\ConsoleApp;
 use Workerman\Worker;
@@ -10,19 +11,14 @@ function isWindows(): bool
     return DIRECTORY_SEPARATOR !== "/";
 }
 
-function runtime_path(){
-    return config('server.runtime_path');
-}
-
 function app($abstract = null, array $parameters = [])
 {
     $instance = Container::getInstance();
-    if(!$instance->resolved('app'))
-        $instance= ConsoleApp::getInstance();
+    if (!$instance->resolved('app'))
+        $instance = ConsoleApp::getInstance();
     if (is_null($abstract)) {
         return $instance;
     }
-
     return $instance->make($abstract, $parameters);
 }
 
@@ -71,12 +67,12 @@ function remove_dir(string $dir): bool
  * Bind worker
  * @param $worker
  * @param $class
+ * @throws ReflectionException
  */
 function worker_bind($worker, $class): void
 {
     $callbackMap = [
         'onConnect',
-        'onMessage',
         'onClose',
         'onError',
         'onBufferFull',
@@ -85,56 +81,70 @@ function worker_bind($worker, $class): void
         'onWebSocketConnect',
         'onWorkerReload'
     ];
-    foreach ($callbackMap as $name) {
-        if (method_exists($class, $name)) {
-            $worker->$name = [$class, $name];
+
+    $methods = getWorkmanCallBacks($class);
+
+    foreach ($callbackMap as $callback) {
+        if (in_array($callback, $methods)) {
+            $worker->$callback = [$class, '_' . $callback];
         }
     }
-    if (method_exists($class, 'onWorkerStart')) {
-        call_user_func([$class, 'onWorkerStart'], $worker);
+    if(in_array('onHttpMessage',$methods) || in_array('onTextMessage',$methods)){
+        $worker->onMessage=[$class,'_onMessage'];
+    }
+    call_user_func([$class, '_onWorkerStart'], $worker);
+}
+
+function getWorkmanCallBacks($class): array
+{
+    try {
+        $ref = new ReflectionClass($class);
+        $methods = $ref->getMethods();
+        $result = [];
+        foreach ($methods as $m) {
+            if ($m->class == $ref->name && str_starts_with($m->name, 'on')) {
+                $result[] = $m->name;
+            }
+        }
+        return $result;
+    } catch (Exception $e) {
+        return [];
     }
 }
+
 /**
  * Start worker
- * @param $processName
- * @param $config
- * @return Worker
+ * @param string $configName
+ * @param string|null $processName
+ * @throws Exception
  */
-function worker_start($processName, $config): Worker
+function worker_start(string $configName, string $processName = null): void
 {
-    $worker = new Worker($config['listen'] ?? null, $config['context'] ?? []);
-    $propertyMap = [
-        'count',
-        'user',
-        'group',
-        'reloadable',
-        'reusePort',
-        'transport',
-        'protocol',
-    ];
-    $worker->name = $processName;
-    foreach ($propertyMap as $property) {
-        if (isset($config[$property])) {
-            $worker->$property = $config[$property];
-        }
+    if (!$processName)
+        $processName = $configName;
+
+    $config = config('laraman.process.' . $configName);
+
+    if (empty($config))
+        throw new Exception('process config not found for ' . $configName);
+
+    if (!class_exists($config['handler'])) {
+        throw new Exception("process error: class {$config['handler']} not exists");
     }
+    $worker = call_user_func([$config['handler'], 'buildWorker'], $configName, $processName);
 
     $worker->onWorkerStart = function ($worker) use ($config) {
-        require_once base_path('/support/starter.php');
-        if (isset($config['handler'])) {
-            if (!class_exists($config['handler'])) {
-                echo "process error: class {$config['handler']} not exists\r\n";
-                return;
+        register_shutdown_function(function ($startTime) {
+            if (time() - $startTime <= 0.1) {
+                sleep(1);
             }
-
-            $instance = App::make($config['handler'], $config['constructor'] ?? []);
-            worker_bind($worker, $instance);
-        }
+        }, time());
+        $instance = new $config['handler']($config['options'] ?? []);
+        worker_bind($worker, $instance);
     };
-    return $worker;
 }
 
-if (! function_exists('cpu_count')) {
+if (!function_exists('cpu_count')) {
     function cpu_count(): int
     {
         // Windows does not support the number of processes setting.

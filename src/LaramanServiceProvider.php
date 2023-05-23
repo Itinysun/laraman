@@ -39,8 +39,8 @@ class LaramanServiceProvider extends ServiceProvider
     {
         // Publishing the configuration file.
         $this->publishes([
+            __DIR__.'/../config/process.php' => config_path('laraman/process.php'),
             __DIR__.'/../config/server.php' => config_path('laraman/server.php'),
-            __DIR__.'/../config/static.php' => config_path('laraman/static.php'),
             __DIR__ . '/../config/starter.php' =>base_path('laraman')
         ],'laraman.install');
     }

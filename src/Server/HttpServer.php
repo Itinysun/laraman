@@ -2,38 +2,25 @@
 
 namespace Itinysun\Laraman\Server;
 
-use App\Exceptions\Handler;
-use App\Http\Kernel;
 use Illuminate\Contracts\Debug\ExceptionHandler;
-use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
-use Illuminate\Notifications\ChannelManager;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Itinysun\Laraman\Http\Response;
+use Itinysun\Laraman\Process\ProcessBase;
 use Throwable;
 use Workerman\Connection\TcpConnection;
 use Workerman\Protocols\Http\Request as WorkmanRequest;
 use Workerman\Worker;
 
-class HttpServer
+class HttpServer extends ProcessBase
 {
-
-    protected static ?Worker $worker = null;
-
-    protected Application $app;
-
-    protected Kernel $kernel;
-
     protected ExceptionHandler $exceptionHandler;
-
 
     /**
      * OnMessage.
      * @param TcpConnection|mixed $connection
-     * @return null
      */
-    public function onMessage(mixed $connection,WorkmanRequest $workmanRequest)
+    protected function onHttpMessage(mixed $connection,WorkmanRequest $workmanRequest): void
     {
         try{
             $request = Request::createFromBase(\Itinysun\Laraman\Http\Request::createFromWorkmanRequest($workmanRequest));
@@ -51,50 +38,15 @@ class HttpServer
                 $response = $this->getResponse($request);
 
                 $this->send($connection, $response, $workmanRequest);
-
-                $this->prepareNextRequest($request);
             } catch (Throwable $e) {
                 report($e);
                 $response = $this->exceptionHandler->render($request,$e);
                 $this->send($connection, Response::fromLaravelResponse($response), $workmanRequest);
-                //clear state after send exception
-                $this->prepareNextRequest($request);
             }
         }catch (Throwable $e){
             $message = $this->app->hasDebugModeEnabled() ? $e->getMessage() : 'server error';
             $this->send($connection,new Response(500,[],$message),$workmanRequest);
         }
-        return null;
-    }
-
-    protected function prepareNextRequest(Request $request): void
-    {
-        if (method_exists($this->app, 'resetScope')) {
-            $this->app->resetScope();
-        }
-
-        if (method_exists($this->app, 'forgetScopedInstances')) {
-            $this->app->forgetScopedInstances();
-        }
-        $this->app->forgetScopedInstances();
-        $this->flushSessionState();
-        $this->flushQueuedCookie();
-        Str::flushCache();
-        $this->flushDatabase();
-
-        if (config('cache.stores.array')) {
-            $this->app->make('cache')->store('array')->flush();
-        }
-        $this->flushAuthenticationState();
-        $this->flushLogContext();
-        $this->flushTranslatorCache();
-        $this->flushMailer();
-        $this->flushNotificationChannelManager();
-        $this->prepareInertiaForNextOperation();
-        $this->prepareLivewireForNextOperation();
-        $this->prepareScoutForNextOperation();
-        $this->PrepareSocialiteForNextOperation();
-        $this->flushUploadedFiles($request);
     }
 
     /**
@@ -102,23 +54,18 @@ class HttpServer
      * @param Worker $worker
      * @return void
      */
-    public function onWorkerStart(Worker $worker): void
+    protected function onWorkerStart(Worker $worker): void
     {
-        static::$worker = $worker;
-        $this->app = new LaramanApp(base_path());
-        $this->app->singleton(
-            \Illuminate\Contracts\Http\Kernel::class,
-            LaramanKernel::class
-        );
-        $this->app->singleton(
-            ExceptionHandler::class,
-            Handler::class
-        );
-        $this->kernel = $this->app->make(\Illuminate\Contracts\Http\Kernel::class);
-        $this->exceptionHandler = $this->app->make(ExceptionHandler::class);
-        $this->fixUploadedFile();
+        if(isset($this->params['static_file']))
+            StaticFileServer::init($this->params['static_file']);
+    }
 
-        StaticFileServer::init();
+    public static function buildWorker($configName, $processName = null): Worker{
+        $worker = parent::buildWorker($configName,$processName);
+        $options = config('laraman.process.'.$configName);
+        if(isset($options['max_package_size']))
+            TcpConnection::$defaultMaxPackageSize=$options['max_package_size'] ?? 10 * 1024 * 1024;
+        return $worker;
     }
 
     /**
@@ -148,93 +95,6 @@ class HttpServer
         );
         $this->kernel->terminate($request, $response);
         return Response::fromLaravelResponse($response);
-    }
-
-    protected function flushNotificationChannelManager(): void
-    {
-        if (! $this->app->resolved(ChannelManager::class)) {
-            return;
-        }
-
-        with($this->app->make(ChannelManager::class), function ($manager) {
-            $manager->forgetDrivers();
-        });
-    }
-    protected function flushMailer(): void
-    {
-        if (! $this->app->resolved('mail.manager')) {
-            return;
-        }
-
-        with($this->app->make('mail.manager'), function ($manager) {
-            $manager->forgetMailers();
-        });
-    }
-
-    protected function fixUploadedFile(): void
-    {
-        $fixesDir = dirname(__DIR__) . '../../fixes';
-        if (! function_exists('\\Symfony\\Component\\HttpFoundation\\File\\is_uploaded_file')) {
-            require $fixesDir.'/fix-symfony-file-validation.php';
-        }
-        if (! function_exists('\\Symfony\\Component\\HttpFoundation\\File\\move_uploaded_file')) {
-            require $fixesDir.'/fix-symfony-file-moving.php';
-        }
-    }
-
-    protected function prepareInertiaForNextOperation(): void
-    {
-        if (! $this->app->resolved('\Inertia\ResponseFactory')) {
-            return;
-        }
-
-        $factory = $this->app->make('\Inertia\ResponseFactory::class');
-
-        if (method_exists($factory, 'flushShared')) {
-            $factory->flushShared();
-        }
-    }
-    protected function prepareLivewireForNextOperation(): void
-    {
-        if (! $this->app->resolved('\Livewire\LivewireManager')) {
-            return;
-        }
-
-        $manager = $this->app->make('\Livewire\LivewireManager');
-
-        if (method_exists($manager, 'flushState')) {
-            $manager->flushState();
-        }
-    }
-
-    protected function prepareScoutForNextOperation(): void
-    {
-        if (! $this->app->resolved('\Laravel\Scout\EngineManager')) {
-            return;
-        }
-
-        $factory = $this->app->make('\Laravel\Scout\EngineManager');
-
-        if (! method_exists($factory, 'forgetEngines')) {
-            return;
-        }
-
-        $factory->forgetEngines();
-    }
-
-    protected function PrepareSocialiteForNextOperation(): void
-    {
-        if (! $this->app->resolved('\Laravel\Socialite\Contracts\Factory')) {
-            return;
-        }
-
-        $factory = $this->app->make('Laravel\Socialite\Contracts\Factory');
-
-        if (! method_exists($factory, 'forgetDrivers')) {
-            return;
-        }
-
-        $factory->forgetDrivers();
     }
 
     protected function refreshTelescope($request): void
@@ -285,120 +145,4 @@ class HttpServer
         );
     }
 
-    protected function flushAuthenticationState(): void
-    {
-        if ($this->app->resolved('auth.driver')) {
-            $this->app->forgetInstance('auth.driver');
-        }
-
-        if ($this->app->resolved('auth')) {
-            with($this->app->make('auth'), function ($auth){
-                $auth->forgetGuards();
-            });
-        }
-    }
-
-    protected function flushSessionState(): void
-    {
-        if (! $this->app->resolved('session')) {
-            return;
-        }
-
-        $driver = $this->app->make('session')->driver();
-
-        $driver->flush();
-        $driver->regenerate();
-    }
-    protected function flushQueuedCookie(): void
-    {
-        if (! $this->app->resolved('cookie')) {
-            return;
-        }
-        $this->app->make('cookie')->flushQueuedCookies();
-    }
-
-    protected function flushDatabase(): void
-    {
-        if (! $this->app->resolved('db')) {
-            return;
-        }
-
-        foreach ($this->app->make('db')->getConnections() as $connection) {
-            if (
-                method_exists($connection, 'resetTotalQueryDuration')
-                && method_exists($connection, 'allowQueryDurationHandlersToRunAgain')
-            ) {
-                $connection->resetTotalQueryDuration();
-                $connection->allowQueryDurationHandlersToRunAgain();
-            }
-            $connection->flushQueryLog();
-            $connection->forgetRecordModificationState();
-        }
-    }
-    protected function flushLogContext(): void
-    {
-        if (! $this->app->resolved('log')) {
-            return;
-        }
-        collect($this->app->make('log')->getChannels())
-            ->map->getLogger()
-            ->filter(function ($logger) {
-                return $logger instanceof \Monolog\ResettableInterface;
-            })->each->reset();
-
-        if (method_exists($this->app['log'], 'flushSharedContext')) {
-            $this->app['log']->flushSharedContext();
-        }
-
-        if (method_exists($this->app['log']->driver(), 'withoutContext')) {
-            $this->app['log']->withoutContext();
-        }
-    }
-
-    protected function flushTranslatorCache(): void
-    {
-        if (! $this->app->resolved('translator')) {
-            return;
-        }
-
-        $config = $this->app->make('config');
-
-        $translator =  $this->app->make('translator');
-
-        if ($translator instanceof \Illuminate\Support\NamespacedItemResolver) {
-            $translator->flushParsedKeys();
-        }
-
-        tap($translator, function ($translator) use ($config) {
-            $translator->setLocale($config->get('app.locale'));
-            $translator->setFallback($config->get('app.fallback_locale'));
-        });
-
-        /*
-         * not very sure about what these mean
-         * see Laravel\Octane\Listeners\FlushLocaleState;
-        $provider = tap(new CarbonServiceProvider($event->app))->updateLocale();
-
-        collect($event->sandbox->getProviders($provider))
-            ->values()
-            ->whenNotEmpty(fn ($providers) => $providers->first()->setAppGetter(fn () => $event->sandbox));
-        */
-
-    }
-
-    protected function flushUploadedFiles(Request $request): void
-    {
-        foreach ($request->files->all() as $file) {
-            if (! $file instanceof \SplFileInfo ||
-                ! is_string($path = $file->getRealPath())) {
-                continue;
-            }
-
-            clearstatcache(true, $path);
-
-            if (is_file($path)) {
-                unlink($path);
-            }
-        }
-    }
 }

@@ -19,9 +19,9 @@ class StaticFileServer
 
     public static array $config=[];
 
-    public static function init(): void
+    public static function init($params): void
     {
-        static::$config= config('laraman.static');
+        static::$config= $params;
         static::$isSafePath = function ($path) {
             return false;
         };

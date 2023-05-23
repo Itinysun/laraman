@@ -18,5 +18,6 @@ class LaramanKernel extends Kernel
         $this->requestStartedAt = Carbon::now();
         $this->app->instance('request', new Request());
         $this->bootstrap();
+        $this->app->make('config');
     }
 }

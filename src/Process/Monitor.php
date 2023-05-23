@@ -25,7 +25,7 @@ use Workerman\Worker;
  * Class FileMonitor
  * @package process
  */
-class Monitor
+class Monitor extends ProcessBase
 {
     /**
      * @var array
@@ -75,16 +75,15 @@ class Monitor
 
     /**
      * FileMonitor constructor.
-     * @param $monitorDir
-     * @param $monitorExtensions
      * @param array $options
      */
-    public function __construct($monitorDir, $monitorExtensions, array $options = [])
+    public function __construct(array $options = [])
     {
-        static::$lockFile=runtime_path().'/monitor.lock';
+        parent::__construct($options);
+        static::$lockFile=storage_path('laraman').'/monitor.lock';
         static::resume();
-        $this->paths = (array)$monitorDir;
-        $this->extensions = $monitorExtensions;
+        $this->paths = (array)$options['monitorDir'];
+        $this->extensions = $options['monitorExtensions'];
         if (!Worker::getAllWorkers()) {
             return;
         }
