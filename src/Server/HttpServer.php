@@ -4,12 +4,14 @@ namespace Itinysun\Laraman\Server;
 
 use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Itinysun\Laraman\Http\Response;
 use Itinysun\Laraman\Process\ProcessBase;
 use Throwable;
 use Workerman\Connection\TcpConnection;
 use Workerman\Protocols\Http\Request as WorkmanRequest;
+use Workerman\Timer;
 use Workerman\Worker;
 
 class HttpServer extends ProcessBase
@@ -58,6 +60,20 @@ class HttpServer extends ProcessBase
     {
         if(isset($this->params['static_file']))
             StaticFileServer::init($this->params['static_file']);
+
+
+        // Heartbeat
+        Timer::add(55, function () {
+            $connections = DB::getConnections();
+            if (!$connections) {
+                return;
+            }
+            foreach ($connections as $key => $item) {
+                if ($item->getDriverName() == 'mysql') {
+                    $item->select('select 1',[],true);
+                }
+            }
+        });
     }
 
     public static function buildWorker($configName, $processName = null): Worker{

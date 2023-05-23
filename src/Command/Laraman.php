@@ -2,11 +2,8 @@
 
 namespace Itinysun\Laraman\Command;
 
-use Exception;
 use Illuminate\Console\Command;
-use Itinysun\Laraman\Console\ConsoleApp;
-use Itinysun\Laraman\Server\HttpServer;
-use Workerman\Connection\TcpConnection;
+use Throwable;
 use Workerman\Worker;
 
 class Laraman extends Command
@@ -31,6 +28,7 @@ class Laraman extends Command
 
     /**
      * Execute the console command.
+     * @throws Throwable
      */
     public function handle(): void
     {
@@ -39,40 +37,81 @@ class Laraman extends Command
             return;
         }
         $this->info(self::NAME);
+        $config = config('laraman.server');
 
-        $processes = config('laraman.server.processes');
-        if (isWindows()) {
-            $processFiles = [];
-            foreach ($processes as $pname){
-                $processFiles[]=$this->buildBootstrapWindows($pname);
-            }
-            echo "\r\n";
-            $resource = $this->open_processes($processFiles);
-            while (1) {
-                sleep(1);
-                if (!empty($monitor) && $monitor->checkAllFilesChange()) {
-                    $status = proc_get_status($resource);
-                    $pid = $status['pid'];
-                    shell_exec("taskkill /F /T /PID $pid");
-                    proc_close($resource);
-                    $resource = $this->open_processes($processFiles);
+        $processes = $config['processes'];
+        try{
+
+            $staticPropertyMap = [
+                'pid_file',
+                'status_file',
+                'log_file'
+            ];
+
+            foreach ($staticPropertyMap as $property){
+                try {
+                    $path = $config[$property] ?? [];
+                    if (!empty($path)) {
+                        $dir = dirname($path);
+                        make_dir($dir);
+                    }
+                } catch (\Throwable $e) {
+                    echo('Failed to create runtime logs directory. Please check the permission.');
+                    throw $e;
                 }
             }
-        }else{
-            Worker::$onMasterReload = function () {
-                if (function_exists('opcache_get_status') && function_exists('opcache_invalidate')) {
-                    if ($status = \opcache_get_status()) {
-                        if (isset($status['scripts']) && $scripts = $status['scripts']) {
-                            foreach (array_keys($scripts) as $file) {
-                                \opcache_invalidate($file, true);
+            Worker::$statusFile = $config['log_file'] ?? '';
+
+            if (isWindows()) {
+                $processFiles = [];
+                foreach ($processes as $name){
+                    $processFiles[]=$this->buildBootstrapWindows($name);
+                }
+                echo "\r\n";
+                $resource = $this->open_processes($processFiles);
+                while (1) {
+                    sleep(1);
+                    if (!empty($monitor) && $monitor->checkAllFilesChange()) {
+                        $status = proc_get_status($resource);
+                        $pid = $status['pid'];
+                        shell_exec("taskkill /F /T /PID $pid");
+                        proc_close($resource);
+                        $resource = $this->open_processes($processFiles);
+                    }
+                }
+            }else{
+                Worker::$onMasterReload = function () {
+                    if (function_exists('opcache_get_status') && function_exists('opcache_invalidate')) {
+                        if ($status = \opcache_get_status()) {
+                            if (isset($status['scripts']) && $scripts = $status['scripts']) {
+                                foreach (array_keys($scripts) as $file) {
+                                    \opcache_invalidate($file, true);
+                                }
                             }
                         }
                     }
-                }
-            };
-        }
+                };
 
-        Worker::runAll();
+                if (property_exists(Worker::class, 'pid_file')) {
+                    Worker::$statusFile = $config['pid_file'] ?? '';
+                }
+                if (property_exists(Worker::class, 'statusFile')) {
+                    Worker::$statusFile = $config['status_file'] ?? '';
+                }
+                if (property_exists(Worker::class, 'stopTimeout')) {
+                    Worker::$stopTimeout = $config['stop_timeout'] ?? 2;
+                }
+                foreach ($processes as $process){
+                    worker_start($process);
+                }
+            }
+            Worker::runAll();
+        }catch (Throwable $e){
+            $this->error($e->getMessage());
+            if(app()->hasDebugModeEnabled()){
+                throw $e;
+            }
+        }
     }
 
     protected function open_processes($processFiles)

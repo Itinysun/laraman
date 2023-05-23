@@ -72,46 +72,7 @@ class ProcessBase
             }
         }
 
-        $staticPropertyMap = [
-            'pid_file',
-            'status_file',
-            'log_file'
-        ];
 
-        foreach ($staticPropertyMap as $property){
-            try {
-                $path = $config[$property] ?? [];
-                if (!empty($path)) {
-                    $dir = dirname($path);
-                    clearstatcache($dir);
-                    if (!is_dir($dir)) {
-                        if (isWindows()) {
-                            mkdir($dir);
-                        } else {
-                            if (!mkdir($dir, 0777, true)) {
-                                throw new \Exception('create dir=> ' . $dir . ' failed');
-                            }
-                        }
-                        echo('create folder for workman runtime => ' . $dir);
-                    }
-                }
-            } catch (\Throwable $e) {
-                echo('Failed to create runtime logs directory. Please check the permission.');
-                throw $e;
-            }
-        }
-        if (property_exists(Worker::class, 'pid_file')) {
-            Worker::$statusFile = $config['pid_file'] ?? '';
-        }
-        if (property_exists(Worker::class, 'log_file')) {
-            Worker::$statusFile = $config['log_file'] ?? '';
-        }
-        if (property_exists(Worker::class, 'statusFile')) {
-            Worker::$statusFile = $config['status_file'] ?? '';
-        }
-        if (property_exists(Worker::class, 'stopTimeout')) {
-            Worker::$stopTimeout = $config['stop_timeout'] ?? 2;
-        }
 
 
         return $worker;
