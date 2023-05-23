@@ -1,25 +1,25 @@
 <?php
 
-namespace Itinysun\Laraman\Server;
+namespace Itinysun\Laraman\Process;
 
 use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Itinysun\Laraman\Http\Response;
-use Itinysun\Laraman\Process\ProcessBase;
+use Itinysun\Laraman\Server\StaticFileServer;
 use Throwable;
 use Workerman\Connection\TcpConnection;
 use Workerman\Protocols\Http\Request as WorkmanRequest;
 use Workerman\Timer;
 use Workerman\Worker;
 
-class HttpServer extends ProcessBase
+class Web extends ProcessBase
 {
     protected ExceptionHandler $exceptionHandler;
 
     /**
-     * OnMessage.
+     * OnMessage for workman ,here we use http protocol for http args
      * @param TcpConnection|mixed $connection
      */
     protected function onHttpMessage(mixed $connection,WorkmanRequest $workmanRequest): void

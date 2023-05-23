@@ -42,6 +42,7 @@ class ProcessBase
     }
 
     /**
+     * if you need custom the build way ,override it
      * @throws \Throwable
      */
     public static function buildWorker($configName, $processName = null): Worker

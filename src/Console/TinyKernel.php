@@ -16,6 +16,10 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Throwable;
 
+/**
+ * we need a tiny kernel,with less bootstrapper ,within config services,
+ * and we need to run our command only , and no events
+ */
 class TinyKernel implements KernelContract
 {
     use InteractsWithTime;

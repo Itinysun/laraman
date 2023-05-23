@@ -8,6 +8,10 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\PackageManifest;
 use Illuminate\Routing\RoutingServiceProvider;
 
+/**
+ * a minimal application ,only for console use.
+ * it should not mistake with container static instance
+ */
 class ConsoleApp extends Application
 {
     /*

@@ -17,6 +17,11 @@ use Symfony\Component\Console\Input\StringInput;
 use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\Process\PhpExecutableFinder;
 
+/**
+ *laravel artisan class is final , so we copy it and override it,
+ * we need an instance with less dependence , and without events
+ *
+ */
 class TinyArtisan  extends SymfonyApplication implements ApplicationContract
 {
     /**
@@ -49,6 +54,7 @@ class TinyArtisan  extends SymfonyApplication implements ApplicationContract
 
     /**
      * Create a new Artisan console application.
+     * boot after init
      *
      * @param Container $laravel
      * @param string $version

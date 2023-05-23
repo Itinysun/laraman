@@ -1,8 +1,9 @@
 <?php
 
+use Itinysun\Laraman\Process\Web;
 use Itinysun\Laraman\Process\Monitor;
-use Itinysun\Laraman\Server\HttpServer;
 use Workerman\Worker;
+
 return [
     // File update detection and automatic reload
     'monitor' => [
@@ -58,6 +59,6 @@ return [
                 'support_php'=>false
             ]
         ],
-        'handler'=> HttpServer::class
+        'handler'=> Web::class
     ]
 ];
