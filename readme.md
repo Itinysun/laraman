@@ -2,37 +2,35 @@
 
 [![Latest Version on Packagist][ico-version]][link-packagist]
 [![Total Downloads][ico-downloads]][link-downloads]
-[![Build Status][ico-travis]][link-travis]
-[![StyleCI][ico-styleci]][link-styleci]
 
-This is where your description should go. Take a look at [contributing.md](contributing.md) to see a to do list.
+
+Run laravel with workman
 
 ## Installation
 
 Via Composer
 
 ``` bash
-composer require itinysun/laraman:*@dev
+composer require itinysun/laraman
+
+
+
+php artisan vendor:publish --tag=laraman.install
+
+update publish
 
 php artisan vendor:publish --tag=laraman.install --force
 ```
 
 ## Usage
 
-shared instance:
-all object based on facade
-event
-config
+
 
 ## Change log
 
 Please see the [changelog](changelog.md) for more information on what has changed recently.
 
-## Testing
 
-``` bash
-$ composer test
-```
 
 ## Contributing
 
@@ -49,7 +47,7 @@ If you discover any security related issues, please email 860760361@qq.com inste
 
 ## License
 
-MIT. Please see the [license file](license.md) for more information.
+MIT
 
 [ico-version]: https://img.shields.io/packagist/v/itinysun/laraman.svg?style=flat-square
 [ico-downloads]: https://img.shields.io/packagist/dt/itinysun/laraman.svg?style=flat-square
