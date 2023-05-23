@@ -2,6 +2,6 @@
 
 return [
     'processes'=>[
-        'web'
+        'web','monitor'
     ]
 ];

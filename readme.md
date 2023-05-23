@@ -11,18 +11,46 @@ Run laravel with workman
 Via Composer
 
 ``` bash
+
+# install package
 composer require itinysun/laraman
 
 
-
+# install publish file
 php artisan vendor:publish --tag=laraman.install
 
-update publish
+# update publish as needed
 
 php artisan vendor:publish --tag=laraman.install --force
 ```
 
 ## Usage
+
+```php
+
+//run
+php laraman
+
+//run a custom process
+php larman process {process name}
+
+
+//config/laraman/server.php
+//this is for auto start process name,web for inner build web server ,
+// monitor for hot reload after edit ,only enable under debug mode
+// see process config in process.php
+    'processes'=>[
+        'web','monitor'
+    ]
+
+
+
+
+```
+## how to write a custom process
+create a new class extend Itinysun\Laraman\Process
+add config in config/laraman/server.php
+if it needs auto start , add name in server.php
 
 
 
