@@ -37,6 +37,7 @@ class Laraman extends Command
             return;
         }
         $this->info(self::NAME);
+        make_dir(storage_path('laraman'));
         $config = config('laraman.server');
 
         $processes = $config['processes'];

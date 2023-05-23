@@ -22,6 +22,19 @@ function app($abstract = null, array $parameters = [])
     return $instance->make($abstract, $parameters);
 }
 
+function make_dir($path){
+    clearstatcache($path);
+    if(is_dir($path))
+        return;
+    if(isWindows()){
+        mkdir($path);
+    }else{
+        if (!mkdir($path, 0777, true)) {
+            throw new RuntimeException("Failed to create runtime logs directory. Please check the permission.");
+        }
+    }
+}
+
 /**
  * Copy dir
  * @param string $source
