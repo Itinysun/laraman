@@ -87,16 +87,21 @@ class Web extends ProcessBase
         数据库心跳，用来保持数据连接不断开。laravel有重连机制，虽然感觉好像没有必要，但是参考的前辈们都写了，我也加上了。
         如果你觉得不需要，可以注释掉。欢迎提供反馈。
         */
-        Timer::add(55, function () {
+        Timer::add(5, function () {
             $connections = DB::getConnections();
             if (!$connections) {
                 return;
             }
-            foreach ($connections as $key => $item) {
-                if ($item->getDriverName() == 'mysql') {
-                    $item->select('select 1',[],true);
+            try{
+                foreach ($connections as $key => $item) {
+                    if ($item->getDriverName() == 'mysql' ) {
+                        $item->select('select 1',[],true);
+                    }
                 }
+            }catch (Throwable $e){
+                echo 'database heartbeat failed,maybe database has down';
             }
+
         });
     }
 
