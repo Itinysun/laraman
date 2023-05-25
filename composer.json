@@ -1,6 +1,6 @@
 {
     "name": "itinysun/laraman",
-    "description": "",
+    "description": "Run laravel with workman ,1 artisan command, 10x speed up",
     "license": "MIT",
     "authors": [
         {
@@ -12,8 +12,7 @@
     "homepage": "https://github.com/itinysun/laraman",
     "keywords": ["Laravel", "Laraman"],
     "require": {
-        "php": ">=8.0",
-        "ext-json": "*",
+        "php": ">=7.0",
         "workerman/workerman": "^4.0.4 || ^5.0.0"
     },
     "require-dev": {

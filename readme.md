@@ -4,7 +4,7 @@
 [![Total Downloads][ico-downloads]][link-downloads]
 
 
-Run laravel with workman
+Run laravel with workman , 1 artisan command, 10x speed up
 
 ## Installation
 
