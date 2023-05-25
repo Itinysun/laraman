@@ -5,6 +5,7 @@ namespace Itinysun\Laraman\Command;
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
 use Throwable;
+use Workerman\Connection\TcpConnection;
 use Workerman\Worker;
 
 class Laraman extends Command
@@ -55,7 +56,6 @@ class Laraman extends Command
 
         try {
 
-
             $staticPropertyMap = [
                 'pid_file',
                 'status_file',
@@ -76,6 +76,7 @@ class Laraman extends Command
             }
 
             Worker::$logFile = $config['log_file'] ?? '';
+            TcpConnection::$defaultMaxPackageSize = $config['max_package_size'] ?? 10 * 1024 * 1024;
 
             if (property_exists(Worker::class, 'stopTimeout')) {
                 Worker::$stopTimeout = $config['stop_timeout'] ?? 2;

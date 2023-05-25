@@ -56,6 +56,7 @@ class ProcessBase
 
 
         $worker = new Worker($config['listen'] ?? null, $config['context'] ?? []);
+
         $propertyMap = [
             'count',
             'user',
@@ -67,6 +68,7 @@ class ProcessBase
         ];
 
         $worker->name = $processName;
+
         foreach ($propertyMap as $property) {
             if (isset($config[$property])) {
                 $worker->$property = $config[$property];
@@ -172,6 +174,9 @@ class ProcessBase
     {
         $this->worker = $worker;
         $this->app = new LaramanApp(base_path());
+
+        $this->app->setCleanMode($this->params['clearMode'] ?? false);
+
         $this->app->singleton(
             \Illuminate\Contracts\Http\Kernel::class,
             LaramanKernel::class

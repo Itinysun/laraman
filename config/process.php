@@ -4,6 +4,17 @@ use Itinysun\Laraman\Process\Web;
 use Itinysun\Laraman\Process\Monitor;
 use Workerman\Worker;
 
+/*
+ * 这里是进程配置文件
+ * 配置文件格式：
+ * 'process name'=>[
+ *      'handler'=>class name, 必须，写进程类名。必须继承 ProcessBase 类
+ *      'options'= array config, 可选，进程类构造函数的参数
+ *      'workerman'=>array config 可选，构造 worker时的参数，参考workerman官方手册，如果是全局属性，请在server中配置
+ * ]
+ *
+ */
+
 return [
     // File update detection and automatic reload
     //热重载：监控文件变动后自动重启进程
@@ -52,12 +63,23 @@ return [
 
         ],
         'options'=>[
-            'max_package_size' => 10 * 1024 * 1024,
+            /*
+             * 洁癖模式
+             * 为了兼容未知内容，可以开启洁癖模式，除了laravel原生自带的服务，所有其他服务均被标记为scoped，然后在每次请求后自动销毁
+            */
+            'clearMode'=>false,
+            /*静态文件配置*/
             'static_file'=>[
+                //是否启用静态文件服务器，如果不启用，无法访问 css\js\img 等静态文件
                 'enable'=>true,
+                /*
+                 * 允许访问的路径，可以添加多个。
+                 * 注意，此选项非常 非常 非常 重要。请确保这些目录不会包含敏感信息
+                 */
                 'allowed'=>[
                     public_path()
                 ],
+                //是否支持获取php文件结果，如果启用则获取运行后结果，如果不启用则返回错误
                 'support_php'=>false
             ]
         ],
