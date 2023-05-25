@@ -14,19 +14,30 @@ use Workerman\Protocols\Http\Request as WorkmanRequest;
 use Workerman\Timer;
 use Workerman\Worker;
 
+/**
+ *
+ */
 class Web extends ProcessBase
 {
+    /**
+     * @var ExceptionHandler
+     */
     protected ExceptionHandler $exceptionHandler;
 
     /**
      * OnMessage for workman ,here we use http protocol for http args
+     * HTTP协议会触发onHttpMessage，这里写我们处理http请求的逻辑
      * @param TcpConnection|mixed $connection
      */
     protected function onHttpMessage(mixed $connection,WorkmanRequest $workmanRequest): void
     {
         try{
+
+            //转换请求
             $request = Request::createFromBase(\Itinysun\Laraman\Http\Request::createFromWorkmanRequest($workmanRequest));
+
             try {
+                //首先检查是否是静态文件，如果是返回文件响应，如果不是则继续获取laravel响应
                 if (StaticFileServer::$enabled && str_contains($request->path(), '.')) {
                     $result = StaticFileServer::tryServeFile($request);
                     if(null!==$result){
@@ -35,17 +46,28 @@ class Web extends ProcessBase
                     }
                 }
 
+                //如果启用了telescope，需要每次重置状态
                 $this->refreshTelescope($request);
 
+                //获取响应
                 $response = $this->getResponse($request);
 
+                //发送响应
                 $this->send($connection, $response, $workmanRequest);
+
             } catch (Throwable $e) {
+
+                //记录异常
                 report($e);
+
+                //使用原生laravel的方式渲染异常并发送异常，请查看laravel手册
                 $response = $this->exceptionHandler->render($request,$e);
                 $this->send($connection, Response::fromLaravelResponse($response), $workmanRequest);
+
             }
         }catch (Throwable $e){
+
+            //运行到这里说明发生的问题是laravel框架无法处理的，需要自行处理异常
             $message = $this->app->hasDebugModeEnabled() ? $e->getMessage() : 'server error';
             $this->send($connection,new Response(500,[],$message),$workmanRequest);
         }
@@ -58,11 +80,17 @@ class Web extends ProcessBase
      */
     protected function onWorkerStart(Worker $worker): void
     {
+
+        //读取配置，初始化静态文件服务
         if(isset($this->params['static_file']))
             StaticFileServer::init($this->params['static_file']);
 
 
-        // Heartbeat
+        /*
+         Heartbeat
+        数据库心跳，用来保持数据连接不断开。laravel有重连机制，虽然感觉好像没有必要，但是参考的前辈们都写了，我也加上了。
+        如果你觉得不需要，可以注释掉。欢迎提供反馈。
+        */
         Timer::add(55, function () {
             $connections = DB::getConnections();
             if (!$connections) {
@@ -76,6 +104,14 @@ class Web extends ProcessBase
         });
     }
 
+
+    /**
+     * 自定义创建worker
+     * @param $configName
+     * @param $processName
+     * @return Worker
+     * @throws Throwable
+     */
     public static function buildWorker($configName, $processName = null): Worker{
         $worker = parent::buildWorker($configName,$processName);
         $options = config('laraman.process.'.$configName);
@@ -85,7 +121,7 @@ class Web extends ProcessBase
     }
 
     /**
-     * Send.
+     * 发送响应，提取自webman
      * @param TcpConnection|mixed $connection
      * @param Response $response
      * @param WorkmanRequest $request
@@ -104,6 +140,11 @@ class Web extends ProcessBase
         $connection->close($response);
     }
 
+    /**
+     * 获取运行结果，并转换为workerman格式
+     * @param Request $request
+     * @return Response
+     */
     public function getResponse(Request $request): Response
     {
         $response = $this->kernel->handle(
@@ -113,6 +154,12 @@ class Web extends ProcessBase
         return Response::fromLaravelResponse($response);
     }
 
+    /**
+     * 重置telescope的状态
+     * telescope会缓存是否记录请求的判断结果，需要每次判断是否需要记录本次请求
+     * @param $request
+     * @return void
+     */
     protected function refreshTelescope($request): void
     {
         if (! config('telescope.enabled')) {
@@ -125,6 +172,12 @@ class Web extends ProcessBase
             \Laravel\Telescope\Telescope::stopRecording();
         }
     }
+
+    /**
+     * 提取自telescope
+     * @param $request
+     * @return bool
+     */
     protected static function requestIsToApprovedDomain($request): bool
     {
         return is_null(config('telescope.domain')) ||
@@ -132,6 +185,7 @@ class Web extends ProcessBase
     }
 
     /**
+     * 提取自telescope，判断请求是否需要记录
      * Determine if the request is to an approved URI.
      *
      * @param Request $request

@@ -73,9 +73,6 @@ class ProcessBase
             }
         }
 
-
-
-
         return $worker;
     }
 
@@ -107,6 +104,7 @@ class ProcessBase
     }
 
     /**
+     * 如果是HTTP协议，会触发这个
      * @link https://www.workerman.net/doc/workerman/worker/on-message.html
      * @param TcpConnection $connection
      * @param \Workerman\Protocols\Http\Request $workmanRequest
@@ -116,7 +114,12 @@ class ProcessBase
     {
     }
 
+    protected function onCustomMessage(TcpConnection $connection, $data){
+
+    }
+
     /**
+     * 如果是其他协议，会触发这个
      * @link https://www.workerman.net/doc/workerman/worker/on-message.html
      * @param TcpConnection $connection
      * @param string $data
@@ -200,19 +203,31 @@ class ProcessBase
 
     public function _onMessage(TcpConnection $connection, $data): void
     {
-        $isWebRequest = $data instanceof Request;
-        if ($this->worker->protocol != null && $this->worker->protocol == 'Workerman\Protocols\Http') {
-            $this->onHttpMessage($connection, $data);
-        } else {
-            $this->onTextMessage($connection, $data);
+        if ($this->worker->protocol != null ) {
+            switch($this->worker->protocol){
+                case 'Workerman\Protocols\Http':
+                    $this->onHttpMessage($connection, $data);
+
+                    //clean files after message
+                    $this->flushUploadedFiles($data);
+                    break;
+                case 'Workerman\Protocols\Frame':
+                case 'Workerman\Protocols\Text':
+                case 'Workerman\Protocols\Websocket':
+                case 'Workerman\Protocols\Ws':
+                    $this->onTextMessage($connection, $data);
+                    break;
+                default:
+                    $this->onCustomMessage($connection,$data);
+            }
         }
+
         if ($this->cleanBaseStateAfterMessage)
             $this->cleanBaseState();
-        if ($this->cleanWebStateAfterMessage) {
+
+        if($this->cleanWebStateAfterMessage)
             $this->cleanWebState();
-            if ($isWebRequest)
-                $this->flushUploadedFiles($data);
-        }
+
     }
 
     public function _onClose(TcpConnection $connection): void
@@ -230,6 +245,10 @@ class ProcessBase
         $this->onBufferDrain($connection);
     }
 
+    /**
+     * 清理laravel基础状态,移植自octane
+     * @return void
+     */
     protected function cleanBaseState(): void
     {
         $this->restScope();
@@ -246,6 +265,10 @@ class ProcessBase
         $this->PrepareSocialiteForNextOperation();
     }
 
+    /**
+     * 清理web相关状态,移植自octane
+     * @return void
+     */
     protected function cleanWebState(): void
     {
         $this->flushQueuedCookie();
@@ -253,6 +276,10 @@ class ProcessBase
         $this->flushAuthenticationState();
     }
 
+    /**
+     * 清理容器中有状态的实例
+     * @return void
+     */
     protected function restScope(): void
     {
         if (method_exists($this->app, 'resetScope')) {
@@ -264,6 +291,9 @@ class ProcessBase
         }
     }
 
+    /**
+     * @return void
+     */
     protected function flushNotificationChannelManager(): void
     {
         if (!$this->app->resolved(ChannelManager::class)) {
@@ -275,6 +305,9 @@ class ProcessBase
         });
     }
 
+    /**
+     * @return void
+     */
     protected function flushMailer(): void
     {
         if (!$this->app->resolved('mail.manager')) {
@@ -286,6 +319,9 @@ class ProcessBase
         });
     }
 
+    /**
+     * @return void
+     */
     protected function flushArrayCache(): void
     {
         if (config('cache.stores.array')) {
@@ -293,11 +329,17 @@ class ProcessBase
         }
     }
 
+    /**
+     * @return void
+     */
     protected function flushStrCache(): void
     {
         Str::flushCache();
     }
 
+    /**
+     * @return void
+     */
     protected function fixUploadedFile(): void
     {
         $fixesDir = dirname(__DIR__) . '../../fixes';
@@ -309,6 +351,9 @@ class ProcessBase
         }
     }
 
+    /**
+     * @return void
+     */
     protected function prepareInertiaForNextOperation(): void
     {
         if (!$this->app->resolved('\Inertia\ResponseFactory')) {
@@ -322,6 +367,9 @@ class ProcessBase
         }
     }
 
+    /**
+     * @return void
+     */
     protected function prepareLivewireForNextOperation(): void
     {
         if (!$this->app->resolved('\Livewire\LivewireManager')) {
@@ -335,6 +383,9 @@ class ProcessBase
         }
     }
 
+    /**
+     * @return void
+     */
     protected function prepareScoutForNextOperation(): void
     {
         if (!$this->app->resolved('\Laravel\Scout\EngineManager')) {
@@ -350,13 +401,16 @@ class ProcessBase
         $factory->forgetEngines();
     }
 
+    /**
+     * @return void
+     */
     protected function PrepareSocialiteForNextOperation(): void
     {
         if (!$this->app->resolved('\Laravel\Socialite\Contracts\Factory')) {
             return;
         }
 
-        $factory = $this->app->make('Laravel\Socialite\Contracts\Factory');
+        $factory = $this->app->make('\Laravel\Socialite\Contracts\Factory');
 
         if (!method_exists($factory, 'forgetDrivers')) {
             return;
@@ -366,6 +420,9 @@ class ProcessBase
     }
 
 
+    /**
+     * @return void
+     */
     protected function flushAuthenticationState(): void
     {
         if ($this->app->resolved('auth.driver')) {
@@ -379,6 +436,9 @@ class ProcessBase
         }
     }
 
+    /**
+     * @return void
+     */
     protected function flushSessionState(): void
     {
         if (!$this->app->resolved('session')) {
@@ -391,6 +451,9 @@ class ProcessBase
         $driver->regenerate();
     }
 
+    /**
+     * @return void
+     */
     protected function flushQueuedCookie(): void
     {
         if (!$this->app->resolved('cookie')) {
@@ -399,6 +462,9 @@ class ProcessBase
         $this->app->make('cookie')->flushQueuedCookies();
     }
 
+    /**
+     * @return void
+     */
     protected function flushDatabase(): void
     {
         if (!$this->app->resolved('db')) {
@@ -418,6 +484,9 @@ class ProcessBase
         }
     }
 
+    /**
+     * @return void
+     */
     protected function flushLogContext(): void
     {
         if (!$this->app->resolved('log')) {
@@ -438,6 +507,9 @@ class ProcessBase
         }
     }
 
+    /**
+     * @return void
+     */
     protected function flushTranslatorCache(): void
     {
         if (!$this->app->resolved('translator')) {
@@ -469,6 +541,10 @@ class ProcessBase
 
     }
 
+    /**
+     * @param Request $request
+     * @return void
+     */
     protected function flushUploadedFiles(Request $request): void
     {
         foreach ($request->files->all() as $file) {

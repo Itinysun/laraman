@@ -99,7 +99,7 @@ class Monitor extends ProcessBase
         }
 
         $memoryLimit = $this->getMemoryLimit($options['memory_limit'] ?? null);
-        if ($memoryLimit && ($options['enable_memory_monitor'] ?? true)) {
+        if (!isWindows() && $memoryLimit && ($options['enable_memory_monitor'] ?? true)) {
             Timer::add(60, [$this, 'checkMemory'], [$memoryLimit]);
         }
     }

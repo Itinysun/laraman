@@ -6,6 +6,7 @@ use Workerman\Worker;
 
 return [
     // File update detection and automatic reload
+    //热重载：监控文件变动后自动重启进程
     'monitor' => [
         'handler' => Monitor::class,
         'workman'=>[
@@ -25,8 +26,10 @@ return [
             'monitorExtensions' => [
                 'php', 'html', 'htm', 'env'
             ],
+            //是否启用文件监控 需要非demon模式
             'enable_file_monitor' => true,
-            'enable_memory_monitor' => DIRECTORY_SEPARATOR === '/',
+            //是否启用占用内存监控 需要linux系统
+            'enable_memory_monitor' => true,
         ]
     ],
     'web'=>[
