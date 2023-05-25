@@ -29,19 +29,15 @@ class Web extends ProcessBase
      * HTTP协议会触发onHttpMessage，这里写我们处理http请求的逻辑
      * @param TcpConnection|mixed $connection
      */
-    protected function onHttpMessage(mixed $connection,WorkmanRequest $workmanRequest): void
+    protected function onHttpMessage(mixed $connection,Request $request): void
     {
         try{
-
-            //转换请求
-            $request = Request::createFromBase(\Itinysun\Laraman\Http\Request::createFromWorkmanRequest($workmanRequest));
-
             try {
                 //首先检查是否是静态文件，如果是返回文件响应，如果不是则继续获取laravel响应
                 if (StaticFileServer::$enabled && str_contains($request->path(), '.')) {
                     $result = StaticFileServer::tryServeFile($request);
                     if(null!==$result){
-                        $this->send($connection,$result,$workmanRequest);
+                        $this->send($connection,$result,$request);
                         return ;
                     }
                 }
@@ -53,7 +49,7 @@ class Web extends ProcessBase
                 $response = $this->getResponse($request);
 
                 //发送响应
-                $this->send($connection, $response, $workmanRequest);
+                $this->send($connection, $response, $request);
 
             } catch (Throwable $e) {
 
@@ -62,14 +58,14 @@ class Web extends ProcessBase
 
                 //使用原生laravel的方式渲染异常并发送异常，请查看laravel手册
                 $response = $this->exceptionHandler->render($request,$e);
-                $this->send($connection, Response::fromLaravelResponse($response), $workmanRequest);
+                $this->send($connection, Response::fromLaravelResponse($response), $request);
 
             }
         }catch (Throwable $e){
 
             //运行到这里说明发生的问题是laravel框架无法处理的，需要自行处理异常
             $message = $this->app->hasDebugModeEnabled() ? $e->getMessage() : 'server error';
-            $this->send($connection,new Response(500,[],$message),$workmanRequest);
+            $this->send($connection,new Response(500,[],$message),$request);
         }
     }
 
@@ -124,14 +120,13 @@ class Web extends ProcessBase
      * 发送响应，提取自webman
      * @param TcpConnection|mixed $connection
      * @param Response $response
-     * @param WorkmanRequest $request
+     * @param Request $request
      * @return void
      */
-    protected function send(mixed $connection, Response $response, WorkmanRequest $request): void
+    protected function send(mixed $connection, Response $response, Request $request): void
     {
         $keepAlive = $request->header('connection');
-
-        if (($keepAlive === null && $request->protocolVersion() === '1.1')
+        if (($keepAlive === null && $request->getProtocolVersion() === '1.1')
             || $keepAlive === 'keep-alive' || $keepAlive === 'Keep-Alive'
         ) {
             $connection->send($response);

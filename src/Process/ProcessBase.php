@@ -47,7 +47,7 @@ class ProcessBase
      */
     public static function buildWorker($configName, $processName = null): Worker
     {
-        $config = config("laraman.process.$processName.workman");
+        $config = config("laraman.process.$processName.workerman");
         if (!isset($config['count']) || $config['count'] === 0) {
             $config['count'] = cpu_count() * 4;
         }
@@ -107,10 +107,10 @@ class ProcessBase
      * 如果是HTTP协议，会触发这个
      * @link https://www.workerman.net/doc/workerman/worker/on-message.html
      * @param TcpConnection $connection
-     * @param \Workerman\Protocols\Http\Request $workmanRequest
+     * @param Request $request
      * @return void
      */
-    protected function onHttpMessage(TcpConnection $connection, \Workerman\Protocols\Http\Request $workmanRequest)
+    protected function onHttpMessage(TcpConnection $connection, Request $request)
     {
     }
 
@@ -206,10 +206,12 @@ class ProcessBase
         if ($this->worker->protocol != null ) {
             switch($this->worker->protocol){
                 case 'Workerman\Protocols\Http':
-                    $this->onHttpMessage($connection, $data);
+                    //转换请求
+                    $request = Request::createFromBase(\Itinysun\Laraman\Http\Request::createFromWorkmanRequest($data));
+                    $this->onHttpMessage($connection, $request);
 
                     //clean files after message
-                    $this->flushUploadedFiles($data);
+                    $this->flushUploadedFiles($request);
                     break;
                 case 'Workerman\Protocols\Frame':
                 case 'Workerman\Protocols\Text':

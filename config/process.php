@@ -9,7 +9,7 @@ return [
     //热重载：监控文件变动后自动重启进程
     'monitor' => [
         'handler' => Monitor::class,
-        'workman'=>[
+        'workerman'=>[
             'reloadable' => false,
         ],
         'options' => [
@@ -33,7 +33,7 @@ return [
         ]
     ],
     'web'=>[
-        'workman'=>[
+        'workerman'=>[
             'listen' => env('LARAMAN_WEB__LISTEN','http://127.0.0.1:8000'),
             'transport' => 'tcp',
             'context' => [],
@@ -49,15 +49,7 @@ return [
             'reloadable' => true,
             //是否以守护模式运行，windows无效 等效 -d
             'daemonize'=>false,
-            'event_loop' => '',
-            //平滑结束超时时间，单位为秒。当进程收到结束、重启信号后，等待当前任务（如果有）执行完毕的最长时间
-            'stop_timeout' => 2,
-            'runtime_path' => storage_path('laraman'),
-            //全局唯一设定
-            'pid_file' => storage_path('laraman') . '/web.pid',
-            'status_file' => storage_path('laraman'). '/web.status',
-            'stdout_file' => storage_path('laraman') . '/web_stdout.log',
-            'log_file' => storage_path('laraman'). '/web.log',
+
         ],
         'options'=>[
             'max_package_size' => 10 * 1024 * 1024,

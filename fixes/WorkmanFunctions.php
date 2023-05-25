@@ -102,7 +102,7 @@ function worker_bind($worker, $class): void
             $worker->$callback = [$class, '_' . $callback];
         }
     }
-    if(in_array('onHttpMessage',$methods) || in_array('onTextMessage',$methods)){
+    if(in_array('onHttpMessage',$methods) || in_array('onTextMessage',$methods) || in_array('onCustomMessage',$methods)){
         $worker->onMessage=[$class,'_onMessage'];
     }
     call_user_func([$class, '_onWorkerStart'], $worker);
@@ -144,14 +144,19 @@ function worker_start(string $configName, string $processName = null): void
     if (!class_exists($config['handler'])) {
         throw new Exception("process error: class {$config['handler']} not exists");
     }
+
     $worker = call_user_func([$config['handler'], 'buildWorker'], $configName, $processName);
 
     $worker->onWorkerStart = function ($worker) use ($config) {
-        register_shutdown_function(function ($startTime) {
-            if (time() - $startTime <= 0.1) {
-                sleep(1);
-            }
-        }, time());
+
+        if(Arr::has($config,'workerman.listen')){
+            register_shutdown_function(function ($startTime) {
+                if (time() - $startTime <= 0.1) {
+                    sleep(1);
+                }
+            }, time());
+        }
+
         $instance = new $config['handler']($config['options'] ?? []);
         worker_bind($worker, $instance);
     };

@@ -3,6 +3,7 @@
 namespace Itinysun\Laraman\Command;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Arr;
 use Throwable;
 use Workerman\Worker;
 
@@ -13,18 +14,18 @@ class Laraman extends Command
      *
      * @var string
      */
-    protected  $signature = 'laraman';
+    protected $signature = 'laraman';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected  $description = 'run laraman server';
+    protected $description = 'run laraman server';
 
-    public const VERSION = "0.0.1";
+    public const VERSION = "0.0.3";
 
-    public const NAME = "laraman v". self::VERSION;
+    public const NAME = "laraman v" . self::VERSION;
 
     /**
      * Execute the console command.
@@ -32,16 +33,28 @@ class Laraman extends Command
      */
     public function handle(): void
     {
-        if(!app()->resolved('laraman_console')){
+
+        //如果使用artisan来启动，会导致容器混乱。
+        if (!app()->resolved('laraman_console')) {
             $this->error('please dont use artisan console, use "php laraman" to start up');
             return;
         }
+
+
+        //打印版本号
         $this->info(self::NAME);
+
+        //创建运行目录
         make_dir(storage_path('laraman'));
+
+        //读取公共配置
         $config = config('laraman.server');
 
+        //读取启动进程列表
         $processes = $config['processes'];
-        try{
+
+        try {
+
 
             $staticPropertyMap = [
                 'pid_file',
@@ -49,7 +62,7 @@ class Laraman extends Command
                 'log_file'
             ];
 
-            foreach ($staticPropertyMap as $property){
+            foreach ($staticPropertyMap as $property) {
                 try {
                     $path = $config[$property] ?? [];
                     if (!empty($path)) {
@@ -61,12 +74,17 @@ class Laraman extends Command
                     throw $e;
                 }
             }
-            Worker::$statusFile = $config['log_file'] ?? '';
+
+            Worker::$logFile = $config['log_file'] ?? '';
+
+            if (property_exists(Worker::class, 'stopTimeout')) {
+                Worker::$stopTimeout = $config['stop_timeout'] ?? 2;
+            }
 
             if (isWindows()) {
                 $processFiles = [];
-                foreach ($processes as $name){
-                    $processFiles[]=$this->buildBootstrapWindows($name);
+                foreach ($processes as $name) {
+                    $processFiles[] = $this->buildBootstrapWindows($name);
                 }
                 echo "\r\n";
                 $resource = $this->open_processes($processFiles);
@@ -80,7 +98,7 @@ class Laraman extends Command
                         $resource = $this->open_processes($processFiles);
                     }
                 }
-            }else{
+            } else {
                 Worker::$onMasterReload = function () {
                     if (function_exists('opcache_get_status') && function_exists('opcache_invalidate')) {
                         if ($status = \opcache_get_status()) {
@@ -93,23 +111,22 @@ class Laraman extends Command
                     }
                 };
 
-                if (property_exists(Worker::class, 'pid_file')) {
-                    Worker::$statusFile = $config['pid_file'] ?? '';
-                }
+                Worker::$pidFile = $config['pid_file'] ?? '';
+                Worker::$eventLoopClass = $config['event_loop'] ?? '';
                 if (property_exists(Worker::class, 'statusFile')) {
                     Worker::$statusFile = $config['status_file'] ?? '';
                 }
                 if (property_exists(Worker::class, 'stopTimeout')) {
                     Worker::$stopTimeout = $config['stop_timeout'] ?? 2;
                 }
-                foreach ($processes as $process){
+                foreach ($processes as $process) {
                     worker_start($process);
                 }
             }
             Worker::runAll();
-        }catch (Throwable $e){
+        } catch (Throwable $e) {
             $this->error($e->getMessage());
-            if(app()->hasDebugModeEnabled()){
+            if (app()->hasDebugModeEnabled()) {
                 throw $e;
             }
         }
@@ -125,6 +142,7 @@ class Laraman extends Command
         }
         return $resource;
     }
+
     protected function buildBootstrapWindows($processName): string
     {
         $basePath = base_path();
