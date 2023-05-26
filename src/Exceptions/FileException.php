@@ -12,7 +12,7 @@
  * @license   http://www.opensource.org/licenses/mit-license.php MIT License
  */
 
-namespace Itinysun\Laraman\exceptions;
+namespace Itinysun\Laraman\Exceptions;
 
 use RuntimeException;
 

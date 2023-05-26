@@ -14,7 +14,7 @@
 
 namespace Itinysun\Laraman\Http;
 
-use Itinysun\Laraman\exceptions\FileException;
+use Itinysun\Laraman\Exceptions\FileException;
 use SplFileInfo;
 use function chmod;
 use function is_dir;
