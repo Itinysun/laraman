@@ -8,9 +8,11 @@ use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\ChannelManager;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
-use Itinysun\Laraman\Events\MessageReceived;
+use Itinysun\Laraman\Events\RequestReceived;
+use Itinysun\Laraman\Events\TaskReceived;
 use Itinysun\Laraman\Listeners\OnMessageReceived;
 use Itinysun\Laraman\Server\LaramanApp;
 use Itinysun\Laraman\Server\LaramanKernel;
@@ -46,34 +48,34 @@ class ProcessBase
     public function _onMessage(TcpConnection $connection, $data): void
     {
         if ($this->worker->protocol != null ) {
-            switch($this->worker->protocol){
-                case 'Workerman\Protocols\Http':
-                    //转换请求
-                    $request = Request::createFromBase(\Itinysun\Laraman\Http\Request::createFromWorkmanRequest($data));
+            if($this->worker->protocol=='Workerman\Protocols\Http'){
+                //转换请求
+                $request = Request::createFromBase(\Itinysun\Laraman\Http\Request::createFromWorkmanRequest($data));
 
-                    MessageReceived::dispatch($this->app,$this->app,$request);
+                RequestReceived::dispatch($this->app,$this->app,$request);
 
-                    $this->onHttpMessage($connection, $request);
+                $this->onHttpMessage($connection, $request);
 
-                    //clean files after message
-                    $this->flushUploadedFiles($request);
-                    break;
-                case 'Workerman\Protocols\Frame':
-                case 'Workerman\Protocols\Text':
-                case 'Workerman\Protocols\Websocket':
-                case 'Workerman\Protocols\Ws':
-                    $this->onTextMessage($connection, $data);
-                    break;
-                default:
-                    $this->onCustomMessage($connection,$data);
+                //clean files after message
+                $this->flushUploadedFiles($request);
+                return;
             }
+            TaskReceived::dispatch($this->app,$this->app,$data);
+            if(in_array($this->worker->protocol,['Workerman\Protocols\Frame','Workerman\Protocols\Text','Workerman\Protocols\Websocket','Workerman\Protocols\Ws']))
+                $this->onTextMessage($connection, $data);
+            else{
+                $this->onCustomMessage($connection,$data);
+            }
+        }else{
+            TaskReceived::dispatch($this->app,$this->app,$data);
+            $this->onCustomMessage($connection,$data);
         }
-
     }
 
     public function _onWorkerStart(Worker $worker): void
     {
         $this->worker = $worker;
+
         $this->app = new LaramanApp(base_path());
 
         $this->app->setCleanMode($this->params['clearMode'] ?? false);
@@ -90,11 +92,20 @@ class ProcessBase
             ExceptionHandler::class,
             Handler::class
         );
+
         $this->kernel = $this->app->make(\Illuminate\Contracts\Http\Kernel::class);
+
         $this->exceptionHandler = $this->app->make(ExceptionHandler::class);
+
         $this->fixUploadedFile();
 
-        Event::listen(MessageReceived::class,[OnMessageReceived::class,'handle']);
+        if(isset($this->params['events']) && !empty($this->params['events'])){
+            foreach ($this->params['events'] as $event=>$v){
+                foreach (Arr::wrap($v) as $listener){
+                    Event::listen($event,$listener);
+                }
+            }
+        }
 
         $this->onWorkerStart($worker);
     }

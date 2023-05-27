@@ -2,11 +2,10 @@
 
 namespace Itinysun\Laraman\Listeners;
 
-class OnMessageReceived
+class CleanWebState
 {
     public function handle($event): void
     {
         $event->app->cleanBaseState();
-        $event->app->cleanWebState();
     }
 }

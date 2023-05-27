@@ -1,16 +1,23 @@
 <?php
 
+use Itinysun\Laraman\Events\RequestReceived;
+use Itinysun\Laraman\Events\TaskReceived;
+use Itinysun\Laraman\Listeners\CleanBaseState;
+use Itinysun\Laraman\Listeners\CleanWebState;
 use Itinysun\Laraman\Process\Web;
 use Itinysun\Laraman\Process\Monitor;
-use Workerman\Worker;
 
 /*
  * 这里是进程配置文件
  * 配置文件格式：
  * 'process name'=>[
  *      'handler'=>class name, 必须，写进程类名。必须继承 ProcessBase 类
- *      'options'= array config, 可选，进程类构造函数的参数
+ *      'options'= [ 进程类构造函数的参数，用于进程内部使用
+ *          'events'=>[event name =>array(listeners)] 可选，订阅事件。
+ *          'clearMode'=>bool , 可选，默认false，是否开启洁癖模式
+ *       ],
  *      'workerman'=>array config 可选，构造 worker时的参数，参考workerman官方手册，如果是全局属性，请在server中配置
+
  * ]
  *
  */
@@ -68,6 +75,19 @@ return [
              * 为了兼容未知内容，可以开启洁癖模式，除了laravel原生自带的服务，所有其他服务均被标记为scoped，然后在每次请求后自动销毁
             */
             'clearMode'=>false,
+            'events'=>[
+                RequestReceived::class=>[
+                    CleanBaseState::class,
+                    CleanWebState::class,
+
+                    /*如果你使用DcatAdmin请取消下面这行注释*/
+                    // \Dcat\Admin\Octane\Listeners\FlushAdminState::class
+
+                ],
+                TaskReceived::class=>[
+
+                ]
+            ],
             /*静态文件配置*/
             'static_file'=>[
                 //是否启用静态文件服务器，如果不启用，无法访问 css\js\img 等静态文件
@@ -83,6 +103,7 @@ return [
                 'support_php'=>false
             ]
         ],
-        'handler'=> Web::class
+        'handler'=> Web::class,
+
     ]
 ];

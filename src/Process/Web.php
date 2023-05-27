@@ -10,7 +10,6 @@ use Itinysun\Laraman\Http\Response;
 use Itinysun\Laraman\Server\StaticFileServer;
 use Throwable;
 use Workerman\Connection\TcpConnection;
-use Workerman\Protocols\Http\Request as WorkmanRequest;
 use Workerman\Timer;
 use Workerman\Worker;
 
@@ -58,7 +57,7 @@ class Web extends ProcessBase
 
                 //使用原生laravel的方式渲染异常并发送异常，请查看laravel手册
                 $response = $this->exceptionHandler->render($request,$e);
-                $this->send($connection, Response::fromLaravelResponse($response), $request);
+                $this->send($connection, Response::fromLaravelResponse($response)->withStatus(500), $request);
 
             }
         }catch (Throwable $e){
@@ -80,6 +79,7 @@ class Web extends ProcessBase
         //读取配置，初始化静态文件服务
         if(isset($this->params['static_file']))
             StaticFileServer::init($this->params['static_file']);
+
 
 
         /*
