@@ -14,6 +14,7 @@
 
 namespace Itinysun\Laraman\Http;
 use Symfony\Component\HttpFoundation\Exception\SuspiciousOperationException;
+use Symfony\Component\HttpFoundation\HeaderBag;
 use Symfony\Component\HttpFoundation\ParameterBag;
 use Workerman\Protocols\Http\Request as WorkmanRequest;
 
@@ -24,7 +25,7 @@ use Workerman\Protocols\Http\Request as WorkmanRequest;
 class Request extends \Symfony\Component\HttpFoundation\Request
 {
     protected WorkmanRequest $workmanRequest;
-    private function __construct()
+    protected function __construct()
     {
 
     }
@@ -35,8 +36,12 @@ class Request extends \Symfony\Component\HttpFoundation\Request
         $instance->query = new InputBagLazy($workmanRequest,'get');
         $instance->cookies  = new InputBagLazy($workmanRequest,'cookie');
         $instance->files = new InputBagLazy($workmanRequest,'file');
+
         $instance->server = new InputBagLazy($workmanRequest,'server');
-        $instance->headers = new InputBagLazy($workmanRequest,'header');
+
+        //as header is called everytime , it doesn't need lazy load
+        $instance->headers = new HeaderBag($workmanRequest->header());
+
         $instance->attributes = new ParameterBag([]);
 
         $instance->content = $workmanRequest->rawBody();
@@ -163,5 +168,7 @@ class Request extends \Symfony\Component\HttpFoundation\Request
         }
         return $this->content;
     }
-
+    public function __destruct(){
+        $this->workmanRequest->__destruct();
+    }
 }

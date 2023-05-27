@@ -7,20 +7,15 @@ use App\Http\Kernel;
 use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
-use Illuminate\Notifications\ChannelManager;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Str;
 use Itinysun\Laraman\Events\RequestReceived;
 use Itinysun\Laraman\Events\TaskReceived;
-use Itinysun\Laraman\Http\WorkmanRequest;
-use Itinysun\Laraman\Listeners\OnMessageReceived;
 use Itinysun\Laraman\Server\LaramanApp;
 use Itinysun\Laraman\Server\LaramanKernel;
 use Itinysun\Laraman\Traits\HasWorkermanBuilder;
 use Itinysun\Laraman\Traits\HasWorkermanEvents;
 use Workerman\Connection\TcpConnection;
-use Workerman\Protocols\Http;
 use Workerman\Worker;
 
 /**
