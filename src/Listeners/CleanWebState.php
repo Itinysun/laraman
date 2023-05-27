@@ -6,6 +6,6 @@ class CleanWebState
 {
     public function handle($event): void
     {
-        $event->app->cleanBaseState();
+        $event->app->cleanWebState();
     }
 }

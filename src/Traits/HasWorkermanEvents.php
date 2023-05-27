@@ -35,16 +35,6 @@ trait HasWorkermanEvents
     {
     }
 
-    /**
-     * 如果是HTTP协议，会触发这个
-     * @link https://www.workerman.net/doc/workerman/worker/on-message.html
-     * @param TcpConnection $connection
-     * @param Request $request
-     * @return void
-     */
-    protected function onHttpMessage(TcpConnection $connection, Request $request)
-    {
-    }
 
     /**
      * 自定义协议 会触发这个，请自行判断 $data 类型进行后续处理
@@ -52,20 +42,10 @@ trait HasWorkermanEvents
      * @param $data
      * @return void
      */
-    protected function onCustomMessage(TcpConnection $connection, $data){
+    protected function onMessage(TcpConnection $connection, $data){
 
     }
 
-    /**
-     * 如果是workerman预定义的text类型协议，会触发这个
-     * @link https://www.workerman.net/doc/workerman/worker/on-message.html
-     * @param TcpConnection $connection
-     * @param string $data
-     * @return void
-     */
-    protected function onTextMessage(TcpConnection $connection, string $data)
-    {
-    }
 
     /**
      * @link https://www.workerman.net/doc/workerman/worker/on-close.html
@@ -103,5 +83,6 @@ trait HasWorkermanEvents
      */
     protected function onError(TcpConnection $connection, $code, $msg)
     {
+
     }
 }
