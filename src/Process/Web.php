@@ -25,10 +25,10 @@ class Web extends ProcessBase
      * HTTP协议会触发onHttpMessage，这里写我们处理http请求的逻辑
      * @param TcpConnection|mixed $connection
      * @param Request $request
-     * @return bool
+     * @return void
      * @throws Throwable
      */
-    protected function onHttpMessage(mixed $connection,Request $request): bool
+    protected function onHttpMessage(mixed $connection,Request $request): void
     {
         try {
             //首先检查是否是静态文件，如果是返回文件响应，如果不是则继续获取laravel响应
@@ -36,7 +36,7 @@ class Web extends ProcessBase
                 $result = StaticFileServer::tryServeFile($request);
                 if(null!==$result){
                     $this->send($connection,$result,$request);
-                    return false;
+                    return ;
                 }
             }
 
@@ -61,7 +61,6 @@ class Web extends ProcessBase
             $response = $this->exceptionHandler->render($request,$e);
             $this->send($connection, Response::fromLaravelResponse($response)->withStatus(500), $request);
         }
-        return true;
     }
 
     /**
