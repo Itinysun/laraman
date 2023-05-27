@@ -47,6 +47,8 @@ class Web extends ProcessBase
                 //获取响应
                 $response = $this->getResponse($request);
 
+                //dump($response->getHeaders());
+
                 //发送响应
                 $this->send($connection, $response, $request);
 

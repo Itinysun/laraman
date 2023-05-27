@@ -28,7 +28,6 @@ class InputBagLazy implements \IteratorAggregate, \Countable
         $this->bagInterface = match ($this->schema){
             'file'=>FileBag::class,
             'server'=>ServerBag::class,
-            'header'=>HeaderBag::class,
             default=>InputBag::class
         };
         if($this->schema==='server'){

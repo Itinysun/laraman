@@ -13,12 +13,14 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
 use Itinysun\Laraman\Events\RequestReceived;
 use Itinysun\Laraman\Events\TaskReceived;
+use Itinysun\Laraman\Http\WorkmanRequest;
 use Itinysun\Laraman\Listeners\OnMessageReceived;
 use Itinysun\Laraman\Server\LaramanApp;
 use Itinysun\Laraman\Server\LaramanKernel;
 use Itinysun\Laraman\Traits\HasWorkermanBuilder;
 use Itinysun\Laraman\Traits\HasWorkermanEvents;
 use Workerman\Connection\TcpConnection;
+use Workerman\Protocols\Http;
 use Workerman\Worker;
 
 /**
@@ -92,6 +94,8 @@ class ProcessBase
             ExceptionHandler::class,
             Handler::class
         );
+
+
 
         $this->kernel = $this->app->make(\Illuminate\Contracts\Http\Kernel::class);
 

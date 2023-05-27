@@ -24,7 +24,7 @@ class Laraman extends Command
      */
     protected $description = 'run laraman server';
 
-    public const VERSION = "0.0.3";
+    public const VERSION = "0.0.5";
 
     public const NAME = "laraman v" . self::VERSION;
 
@@ -51,86 +51,34 @@ class Laraman extends Command
         //读取公共配置
         $config = config('laraman.server');
 
+        initWorkerConfig($config);
+
         //读取启动进程列表
         $processes = $config['processes'];
 
-        try {
-
-            $staticPropertyMap = [
-                'pid_file',
-                'status_file',
-                'log_file'
-            ];
-
-            foreach ($staticPropertyMap as $property) {
-                try {
-                    $path = $config[$property] ?? [];
-                    if (!empty($path)) {
-                        $dir = dirname($path);
-                        make_dir($dir);
-                    }
-                } catch (\Throwable $e) {
-                    echo('Failed to create runtime logs directory. Please check the permission.');
-                    throw $e;
+        if (isWindows()) {
+            $processFiles = [];
+            foreach ($processes as $name) {
+                $processFiles[] = $this->buildBootstrapWindows($name);
+            }
+            $resource = $this->open_processes($processFiles);
+            while (1) {
+                sleep(1);
+                if (!empty($monitor) && $monitor->checkAllFilesChange()) {
+                    $status = proc_get_status($resource);
+                    $pid = $status['pid'];
+                    shell_exec("taskkill /F /T /PID $pid");
+                    proc_close($resource);
+                    $resource = $this->open_processes($processFiles);
                 }
             }
-
-            Worker::$logFile = $config['log_file'] ?? '';
-            TcpConnection::$defaultMaxPackageSize = $config['max_package_size'] ?? 10 * 1024 * 1024;
-
-            if (property_exists(Worker::class, 'stopTimeout')) {
-                Worker::$stopTimeout = $config['stop_timeout'] ?? 2;
-            }
-
-            if (isWindows()) {
-                $processFiles = [];
-                foreach ($processes as $name) {
-                    $processFiles[] = $this->buildBootstrapWindows($name);
-                }
-                echo "\r\n";
-                $resource = $this->open_processes($processFiles);
-                while (1) {
-                    sleep(1);
-                    if (!empty($monitor) && $monitor->checkAllFilesChange()) {
-                        $status = proc_get_status($resource);
-                        $pid = $status['pid'];
-                        shell_exec("taskkill /F /T /PID $pid");
-                        proc_close($resource);
-                        $resource = $this->open_processes($processFiles);
-                    }
-                }
-            } else {
-                Worker::$onMasterReload = function () {
-                    if (function_exists('opcache_get_status') && function_exists('opcache_invalidate')) {
-                        if ($status = \opcache_get_status()) {
-                            if (isset($status['scripts']) && $scripts = $status['scripts']) {
-                                foreach (array_keys($scripts) as $file) {
-                                    \opcache_invalidate($file, true);
-                                }
-                            }
-                        }
-                    }
-                };
-
-                Worker::$pidFile = $config['pid_file'] ?? '';
-                Worker::$eventLoopClass = $config['event_loop'] ?? '';
-                if (property_exists(Worker::class, 'statusFile')) {
-                    Worker::$statusFile = $config['status_file'] ?? '';
-                }
-                if (property_exists(Worker::class, 'stopTimeout')) {
-                    Worker::$stopTimeout = $config['stop_timeout'] ?? 2;
-                }
-                foreach ($processes as $process) {
-                    worker_start($process);
-                }
-            }
-            Worker::runAll();
-        } catch (Throwable $e) {
-            $this->error($e->getMessage());
-            if (app()->hasDebugModeEnabled()) {
-                throw $e;
+        } else {
+            foreach ($processes as $process) {
+                startProcessWithName($process);
             }
         }
+
+        Worker::runAll();
     }
 
     protected function open_processes($processFiles)

@@ -4,6 +4,8 @@ use Illuminate\Container\Container;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\App;
 use Itinysun\Laraman\Console\ConsoleApp;
+use Workerman\Connection\TcpConnection;
+use Workerman\Protocols\Http;
 use Workerman\Worker;
 
 function isWindows(): bool
@@ -22,67 +24,100 @@ function app($abstract = null, array $parameters = [])
     return $instance->make($abstract, $parameters);
 }
 
-function make_dir($path){
+/**
+ * 根据不同系统类型，生成文件夹
+ * @param $path
+ * @return void
+ */
+function make_dir($path): void
+{
     clearstatcache($path);
-    if(is_dir($path))
+    if (is_dir($path))
         return;
-    if(isWindows()){
+    if (isWindows()) {
         mkdir($path);
-    }else{
+    } else {
         if (!mkdir($path, 0777, true)) {
             throw new RuntimeException("Failed to create runtime logs directory. Please check the permission.");
         }
     }
 }
 
-/**
- * Copy dir
- * @param string $source
- * @param string $dest
- * @param bool $overwrite
- * @return void
- */
-function copy_dir(string $source, string $dest, bool $overwrite = false): void
+function marshalHeaders(array $headers): array
 {
-    if (is_dir($source)) {
-        if (!is_dir($dest)) {
-            mkdir($dest);
-        }
-        $files = scandir($source);
-        foreach ($files as $file) {
-            if ($file !== "." && $file !== "..") {
-                copy_dir("$source/$file", "$dest/$file");
+    $arr = [];
+    foreach ($headers as $key => $v) {
+        $keyWords = explode('-', $key);
+        foreach ($keyWords as &$k)
+            $k = ucwords($k);
+        $newKey = implode('-', $keyWords);
+        $arr[$newKey] = $v;
+    }
+    return $arr;
+}
+
+function initWorkerConfig(array $config): void
+{
+    $staticPropertyMap = [
+        'pid_file',
+        'status_file',
+        'log_file'
+    ];
+
+    foreach ($staticPropertyMap as $property) {
+        try {
+            $path = $config[$property] ?? [];
+            if (!empty($path)) {
+                $dir = dirname($path);
+                make_dir($dir);
             }
+        } catch (\Throwable $e) {
+            echo('Failed to create runtime logs directory. Please check the permission.');
+            throw $e;
         }
-    } else if (file_exists($source) && ($overwrite || !file_exists($dest))) {
-        copy($source, $dest);
+    }
+
+    Worker::$logFile = $config['log_file'] ?? '';
+
+    TcpConnection::$defaultMaxPackageSize = $config['max_package_size'] ?? 10 * 1024 * 1024;
+
+
+    if (property_exists(Worker::class, 'stopTimeout')) {
+        Worker::$stopTimeout = $config['stop_timeout'] ?? 2;
+    }
+
+    if (!isWindows()) {
+        Worker::$onMasterReload = function () {
+            if (function_exists('opcache_get_status') && function_exists('opcache_invalidate')) {
+                if ($status = \opcache_get_status()) {
+                    if (isset($status['scripts']) && $scripts = $status['scripts']) {
+                        foreach (array_keys($scripts) as $file) {
+                            \opcache_invalidate($file, true);
+                        }
+                    }
+                }
+            }
+        };
+
+        Worker::$pidFile = $config['pid_file'] ?? '';
+        Worker::$eventLoopClass = $config['event_loop'] ?? '';
+        if (property_exists(Worker::class, 'statusFile')) {
+            Worker::$statusFile = $config['status_file'] ?? '';
+        }
+        if (property_exists(Worker::class, 'stopTimeout')) {
+            Worker::$stopTimeout = $config['stop_timeout'] ?? 2;
+        }
     }
 }
 
-/**
- * Remove dir
- * @param string $dir
- * @return bool
- */
-function remove_dir(string $dir): bool
-{
-    if (is_link($dir) || is_file($dir)) {
-        return unlink($dir);
-    }
-    $files = array_diff(scandir($dir), array('.', '..'));
-    foreach ($files as $file) {
-        (is_dir("$dir/$file") && !is_link($dir)) ? remove_dir("$dir/$file") : unlink("$dir/$file");
-    }
-    return rmdir($dir);
-}
 
 /**
- * Bind worker
+ * 事件绑定
  * @param $worker
  * @param $class
  * @throws ReflectionException
  */
-function worker_bind($worker, $class): void
+function bindWorkerEvents($worker, $class): void
 {
     $callbackMap = [
         'onConnect',
@@ -95,20 +130,25 @@ function worker_bind($worker, $class): void
         'onWorkerReload'
     ];
 
-    $methods = getWorkmanCallBacks($class);
+    $methods = getWorkerCallBacks($class);
 
     foreach ($callbackMap as $callback) {
         if (in_array($callback, $methods)) {
             $worker->$callback = [$class, '_' . $callback];
         }
     }
-    if(in_array('onHttpMessage',$methods) || in_array('onTextMessage',$methods) || in_array('onCustomMessage',$methods)){
-        $worker->onMessage=[$class,'_onMessage'];
+    if (in_array('onHttpMessage', $methods) || in_array('onTextMessage', $methods) || in_array('onCustomMessage', $methods)) {
+        $worker->onMessage = [$class, '_onMessage'];
     }
     call_user_func([$class, '_onWorkerStart'], $worker);
 }
 
-function getWorkmanCallBacks($class): array
+/**
+ * 获取类型自有的原生事件方法
+ * @param $class
+ * @return array
+ */
+function getWorkerCallBacks($class): array
 {
     try {
         $ref = new ReflectionClass($class);
@@ -131,7 +171,7 @@ function getWorkmanCallBacks($class): array
  * @param string|null $processName
  * @throws Exception
  */
-function worker_start(string $configName, string $processName = null): void
+function startProcessWithName(string $configName, string $processName = null): void
 {
     if (!$processName)
         $processName = $configName;
@@ -149,7 +189,7 @@ function worker_start(string $configName, string $processName = null): void
 
     $worker->onWorkerStart = function ($worker) use ($config) {
 
-        if(Arr::has($config,'workerman.listen')){
+        if (Arr::has($config, 'workerman.listen')) {
             register_shutdown_function(function ($startTime) {
                 if (time() - $startTime <= 0.1) {
                     sleep(1);
@@ -158,25 +198,24 @@ function worker_start(string $configName, string $processName = null): void
         }
 
         $instance = new $config['handler']($config['options'] ?? []);
-        worker_bind($worker, $instance);
+        bindWorkerEvents($worker, $instance);
     };
 }
 
-if (!function_exists('cpu_count')) {
-    function cpu_count(): int
-    {
-        // Windows does not support the number of processes setting.
-        if (\DIRECTORY_SEPARATOR === '\\') {
-            return 1;
-        }
-        $count = 4;
-        if (\is_callable('shell_exec')) {
-            if (\strtolower(PHP_OS) === 'darwin') {
-                $count = (int)\shell_exec('sysctl -n machdep.cpu.core_count');
-            } else {
-                $count = (int)\shell_exec('nproc');
-            }
-        }
-        return $count > 0 ? $count : 2;
+function cpu_count(): int
+{
+    // Windows does not support the number of processes setting.
+    if (isWindows()) {
+        return 1;
     }
+    $count = 4;
+    if (\is_callable('shell_exec')) {
+        if (\strtolower(PHP_OS) === 'darwin') {
+            $count = (int)\shell_exec('sysctl -n machdep.cpu.core_count');
+        } else {
+            $count = (int)\shell_exec('nproc');
+        }
+    }
+    return $count > 0 ? $count : 2;
 }
+

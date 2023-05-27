@@ -40,7 +40,7 @@ class Process extends Command
 
         $processName=$this->argument('name');
 
-        worker_start($processName);
+        startProcessWithName($processName);
         Worker::runAll();
     }
 }

@@ -89,12 +89,16 @@ class Response extends \Workerman\Protocols\Http\Response
     public static function fromLaravelResponse(mixed $response): static
     {
         $status = $response->getStatusCode();
+        $headers = $response->headers->all();
         $reason = static::$_phrases[$status] ?? 'unknown error';
-        $resp = new static($status,$response->headers->all(),$response->getContent());
+        $resp = new static($status,marshalHeaders($headers),$response->getContent());
         $resp->_reason=$reason;
         if($response instanceof BinaryFileResponse && null!==$response->getFile()){
             $resp->withFile($response->getFile());
         }
         return $resp;
     }
+
+
+
 }
