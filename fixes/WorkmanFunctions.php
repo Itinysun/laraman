@@ -176,7 +176,7 @@ function startProcessWithName(string $configName, string $processName = null): v
     if (!$processName)
         $processName = $configName;
 
-    $config = config('laraman.process.' . $configName);
+    $config = config('laraman.' . $configName);
 
     if (empty($config))
         throw new Exception('process config not found for ' . $configName);
