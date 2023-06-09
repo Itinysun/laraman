@@ -45,6 +45,12 @@ return [
          * 为了兼容未知内容，可以开启洁癖模式，除了laravel原生自带的服务，所有其他服务均被标记为scoped，然后在每次请求后自动销毁
         */
         'clearMode' => false,
+
+        /*
+         * 数据库心跳
+         * 单位为秒，0 为禁用心跳
+         * */
+        'db_heartbeat_interval'=>59,
         'events' => [
             RequestReceived::class => [
                 CleanBaseState::class,

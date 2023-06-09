@@ -116,24 +116,27 @@ trait HasLaravelApplication
         /*
          Heartbeat
         数据库心跳，用来保持数据连接不断开。laravel有重连机制，虽然感觉好像没有必要，但是参考的前辈们都写了，我也加上了。
-        如果你觉得不需要，可以注释掉。欢迎提供反馈。
+        如果你觉得不需要，可以在配置文件中设置心跳间隔为0。欢迎提供反馈。
         */
-        Timer::add(5, function () {
-            $connections = DB::getConnections();
-            if (!$connections) {
-                return;
-            }
-            try{
-                foreach ($connections as $key => $item) {
-                    if ($item->getDriverName() == 'mysql' ) {
-                        $item->select('select 1',[],true);
-                    }
+        if(isset($this->options['db_heartbeat_interval'])){
+            Timer::add($this->options['db_heartbeat_interval'], function () {
+                $connections = DB::getConnections();
+                if (!$connections) {
+                    return;
                 }
-            }catch (Throwable $e){
-                echo 'database heartbeat failed,maybe database has down';
-            }
+                try{
+                    foreach ($connections as $item) {
+                        if ($item->getDriverName() == 'mysql' ) {
+                            $item->select('select 1',[],true);
+                        }
+                    }
+                }catch (Throwable $e){
+                    echo 'database heartbeat failed,maybe database has down'."\r\n".$e->getMessage()."\n\r";
+                }
 
-        });
+            });
+        }
+
         $this->onWorkerStart($worker);
     }
 
@@ -153,7 +156,7 @@ trait HasLaravelApplication
 
 
     /**
-     * 发送响应，提取自webman
+     * 发送响应，提取自 webman
      * @param TcpConnection|mixed $connection
      * @param Response $response
      * @param Request $request
