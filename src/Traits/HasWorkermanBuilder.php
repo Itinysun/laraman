@@ -13,12 +13,19 @@ trait HasWorkermanBuilder
      */
     public static function buildWorker($configName, $processName = null): Worker
     {
-        $config = config("laraman.process.$processName.workerman");
-        if (isset($config['count']) && $config['count'] == 0) {
-            $config['count'] = cpu_count() * 4;
-        }else{
+        $config = config("laraman.$processName.workerman");
+
+        /*
+         * check config['count'],
+         * if not set or in windows,value should always be 1
+         * if set to empty thing , value should be 4 times of cpu_count(),
+        */
+        if (isWindows() || !isset($config['count'])) {
             $config['count'] = 1;
+        }else{
+            $config['count'] = intval($config['count']) ?? cpu_count() * 4;
         }
+
         if (!$processName)
             $processName = $configName;
 

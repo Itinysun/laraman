@@ -22,19 +22,32 @@ use Itinysun\Laraman\Process\Web;
  */
 return [
     'workerman' => [
+
         'listen' => env('LARAMAN_WEB_LISTEN', 'http://127.0.0.1:8000'),
+
         'transport' => 'tcp',
+
         'context' => [],
+
         'name' => 'laraman',
-        //process需要的子进程数量，windows无效
+
+        /*
+         * process需要的子进程数量，windows无效
+         * if not set or in windows,value should always be 1
+         * if set to empty thing , value should be 4 times of cpu_count()
+         * */
         'count' => env('LARAMAN_WEB_WORKERS', 0),
+
         //运行命令使用的用户及组，windows无效
         'user' => '',
         'group' => '',
+
         //是否支持端口复用，如果你需要不同process共用1个端口，请设置为true
         'reusePort' => false,
+
         //是否支持平滑重启，如果是持续性任务，请设置为false
         'reloadable' => true,
+
         //是否以守护模式运行，windows无效 等效 -d
         'daemonize' => false,
 
