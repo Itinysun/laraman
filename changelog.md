@@ -2,6 +2,14 @@
 
 All notable changes to `Laraman` will be documented in this file.
 
+## version 0.0.7
+- bugfix:error count config for process number
+- improve:add database heartbeat config
+
+## version 0.0.6
+- improve:add database heartbeat config
+- modify:split process config file to standalone
+
 ## version 0.0.5
 - move methods to traits
 - add event-listener mode
