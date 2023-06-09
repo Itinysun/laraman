@@ -4,6 +4,7 @@ namespace Itinysun\Laraman\Command;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Arr;
+use Itinysun\Laraman\Process\Monitor;
 use Throwable;
 use Workerman\Connection\TcpConnection;
 use Workerman\Worker;
@@ -58,7 +59,12 @@ class Laraman extends Command
 
         if (isWindows()) {
             $processFiles = [];
+            $monitor = null;
             foreach ($processes as $name) {
+                if($name=='monitor'){
+                    $option = config('laraman.monitor.options');
+                    $monitor = new Monitor($option);
+                }
                 $processFiles[] = $this->buildBootstrapWindows($name);
             }
             $resource = $this->open_processes($processFiles);

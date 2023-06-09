@@ -80,7 +80,9 @@ class Monitor extends ProcessBase
     public function __construct(array $options = [])
     {
         parent::__construct($options);
+
         static::$lockFile=storage_path('laraman').'/monitor.lock';
+
         static::resume();
         $this->paths = (array)$options['monitorDir'];
         $this->extensions = $options['monitorExtensions'];
@@ -91,7 +93,7 @@ class Monitor extends ProcessBase
         if (in_array('exec', $disableFunctions, true)) {
             echo "\nMonitor file change turned off because exec() has been disabled by disable_functions setting in " . PHP_CONFIG_FILE_PATH . "/php.ini\n";
         } else {
-            if ($options['enable_file_monitor'] ?? true) {
+            if (!isWindows() && ($options['enable_file_monitor'] ?? true)) {
                 Timer::add(1, function () {
                     $this->checkAllFilesChange();
                 });
@@ -135,15 +137,20 @@ class Monitor extends ProcessBase
             // check mtime
             if ($lastMtime < $file->getMTime() && in_array($file->getExtension(), $this->extensions, true)) {
                 $var = 0;
+                /*
+                 * 检查是否有语法错误
+                 * 有错误var为-1，无错误为0
+                 * @see https://www.php.net/manual/zh/features.commandline.options.php
+                 * */
                 exec('"'.PHP_BINARY . '" -l ' . $file, $out, $var);
+                $lastMtime = $file->getMTime();
                 if ($var) {
-                    $lastMtime = $file->getMTime();
+                    /*如果有语法错误，跳过本次重启检查*/
                     continue;
                 }
-                $lastMtime = $file->getMTime();
                 echo $file . " update and reload\n";
                 // send SIGUSR1 signal to master process for reload
-                if (DIRECTORY_SEPARATOR === '/') {
+                if (!isWindows()) {
                     posix_kill(posix_getppid(), SIGUSR1);
                 } else {
                     return true;
@@ -166,11 +173,13 @@ class Monitor extends ProcessBase
         if (static::isPaused()) {
             return false;
         }
+
         foreach ($this->paths as $path) {
             if ($this->checkFilesChange($path)) {
                 return true;
             }
         }
+
         return false;
     }
 
