@@ -27,7 +27,7 @@ use Symfony\Component\Console\Formatter\OutputFormatterInterface;
  *
  * @author Fabien Potencier <fabien@symfony.com>
  */
-class ConsoleOutputHack extends StreamOutput implements ConsoleOutputInterface
+class ConsoleOutputFix extends StreamOutput implements ConsoleOutputInterface
 {
     private OutputInterface $stderr;
     private array $consoleSectionOutputs = [];
