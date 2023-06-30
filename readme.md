@@ -49,8 +49,8 @@ php larman process {process name}
 ```
 ## how to write a custom process
 create a new class extend Itinysun\Laraman\Process
-add config in config/laraman/server.php
-if it needs auto start , add name in server.php
+create a new config file in config/laraman/
+if it needs auto start , add config name in server.php
 
 
 

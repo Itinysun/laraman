@@ -2,6 +2,10 @@
 
 All notable changes to `Laraman` will be documented in this file.
 
+## version 0.1.0
+this is prerelease version
+solved problem that can not start -d mode in linux
+
 ## version 0.0.7
 - bugfix:error count config for process number
 - improve:add database heartbeat config

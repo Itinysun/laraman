@@ -16,7 +16,7 @@ class Laraman extends Command
      *
      * @var string
      */
-    protected $signature = 'laraman';
+    protected $signature = 'laraman {-d?}';
 
     /**
      * The console command description.
@@ -25,9 +25,9 @@ class Laraman extends Command
      */
     protected $description = 'run laraman server';
 
-    public const VERSION = "0.0.5";
+    public const VERSION = "0.1.0";
 
-    public const NAME = "laraman v" . self::VERSION;
+    public const NAME = "laraman v" . self::VERSION."\r\n";
 
     /**
      * Execute the console command.
@@ -38,13 +38,12 @@ class Laraman extends Command
 
         //如果使用artisan来启动，会导致容器混乱。
         if (!app()->resolved('laraman_console')) {
-            $this->error('please dont use artisan console, use "php laraman" to start up');
+            Worker::safeEcho('please dont use artisan console, use "php laraman" to start up');
             return;
         }
 
-
         //打印版本号
-        $this->info(self::NAME);
+        Worker::safeEcho(self::NAME);
 
         //创建运行目录
         make_dir(storage_path('laraman'));
