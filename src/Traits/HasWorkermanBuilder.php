@@ -23,7 +23,7 @@ trait HasWorkermanBuilder
         if (isWindows() || !isset($config['count'])) {
             $config['count'] = 1;
         }else{
-            $config['count'] = intval($config['count']) ?? cpu_count() * 4;
+            $config['count'] = intval($config['count']) > 0 ? intval($config['count']) : cpu_count() * 4;
         }
 
         if (!$processName)

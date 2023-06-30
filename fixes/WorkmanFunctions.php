@@ -216,6 +216,6 @@ function cpu_count(): int
             $count = (int)\shell_exec('nproc');
         }
     }
-    return $count > 0 ? $count : 2;
+    return $count > 0 ? $count : 4;
 }
 
