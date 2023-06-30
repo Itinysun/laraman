@@ -6,6 +6,8 @@
 
 Run laravel with workman , 1 artisan command, 10x speed up
 
+v1.0.0 released !
+
 ## Installation
 
 Via Composer

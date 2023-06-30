@@ -2,6 +2,9 @@
 
 All notable changes to `Laraman` will be documented in this file.
 
+## version 1.0.0 released
+please force update if old version installed
+
 ## version 0.1.0
 this is prerelease version
 solved problem that can not start -d mode in linux
