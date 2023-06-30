@@ -30,9 +30,7 @@ class ConsoleApp extends Application
             \App\Exceptions\Handler::class
         );
 
-
         $kernel = $this->make(\Illuminate\Contracts\Console\Kernel::class);
-
 
         return $kernel->handle(
             $input = new OnlyArgvInput($command),

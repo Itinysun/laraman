@@ -3,10 +3,8 @@
 namespace Itinysun\Laraman\Command;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Arr;
 use Itinysun\Laraman\Process\Monitor;
 use Throwable;
-use Workerman\Connection\TcpConnection;
 use Workerman\Worker;
 
 class Laraman extends Command

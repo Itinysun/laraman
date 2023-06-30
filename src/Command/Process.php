@@ -27,9 +27,6 @@ class Process extends Command
      */
     public function handle(): void
     {
-        //$this->info($this->argument('name'));
-
-
         ini_set('display_errors', 'on');
         error_reporting(E_ALL);
         make_dir(storage_path('laraman'));

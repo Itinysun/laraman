@@ -12,8 +12,9 @@
     "homepage": "https://github.com/itinysun/laraman",
     "keywords": ["Laravel", "Laraman"],
     "require": {
-        "php": ">=7.0",
-        "workerman/workerman": "^4.0.4 || ^5.0.0"
+        "php": ">=8.0",
+        "workerman/workerman": "^4.0.4 || ^5.0.0",
+        "laravel/framework": "^9.0 || ^10.0"
     },
     "require-dev": {
 
