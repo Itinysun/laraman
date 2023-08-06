@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Itinysun\Laraman\Command\Configs;
 use Itinysun\Laraman\Http\Response;
 use Itinysun\Laraman\Server\LaramanApp;
 use Itinysun\Laraman\Server\LaramanKernel;
@@ -81,7 +82,7 @@ trait HasLaravelApplication
     {
         $this->worker = $worker;
 
-        $this->app = new LaramanApp(base_path());
+        $this->app = new LaramanApp(Configs::getBasePath());
 
         $this->app->setCleanMode($this->options['clearMode'] ?? false);
 
@@ -97,8 +98,6 @@ trait HasLaravelApplication
             ExceptionHandler::class,
             Handler::class
         );
-
-
 
         $this->kernel = $this->app->make(\Illuminate\Contracts\Http\Kernel::class);
 

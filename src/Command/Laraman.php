@@ -2,52 +2,34 @@
 
 namespace Itinysun\Laraman\Command;
 
-use Illuminate\Console\Command;
+use Exception;
 use Itinysun\Laraman\Process\Monitor;
 use Throwable;
 use Workerman\Worker;
 
-class Laraman extends Command
+class Laraman
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
-    protected $signature = 'laraman {-d?}';
-
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
-    protected $description = 'run laraman server';
-
-    public const VERSION = "0.1.0";
+    public const VERSION = "2.0.0 beta";
 
     public const NAME = "laraman v" . self::VERSION."\r\n";
+
+
 
     /**
      * Execute the console command.
      * @throws Throwable
      */
-    public function handle(): void
+    public static function run(): int
     {
-
-        //如果使用artisan来启动，会导致容器混乱。
-        if (!app()->resolved('laraman_console')) {
-            Worker::safeEcho('please dont use artisan console, use "php laraman" to start up');
-            return;
-        }
 
         //打印版本号
         Worker::safeEcho(self::NAME);
 
-        //创建运行目录
-        make_dir(storage_path('laraman'));
-
         //读取公共配置
-        $config = config('laraman.server');
+        $config = Configs::get('server');
+
+        //创建运行目录
+        make_dir(Configs::runtimePath());
 
         initWorkerConfig($config);
 
@@ -59,12 +41,13 @@ class Laraman extends Command
             $monitor = null;
             foreach ($processes as $name) {
                 if($name=='monitor'){
-                    $option = config('laraman.monitor.options');
+                    $monitorConfig = Configs::get('monitor');
+                    $option = $monitorConfig['options'];
                     $monitor = new Monitor($option);
                 }
-                $processFiles[] = $this->buildBootstrapWindows($name);
+                $processFiles[] = self::buildBootstrapWindows($name);
             }
-            $resource = $this->open_processes($processFiles);
+            $resource = self::open_processes($processFiles);
             while (1) {
                 sleep(1);
                 if (!empty($monitor) && $monitor->checkAllFilesChange()) {
@@ -72,7 +55,7 @@ class Laraman extends Command
                     $pid = $status['pid'];
                     shell_exec("taskkill /F /T /PID $pid");
                     proc_close($resource);
-                    $resource = $this->open_processes($processFiles);
+                    $resource = self::open_processes($processFiles);
                 }
             }
         } else {
@@ -82,9 +65,10 @@ class Laraman extends Command
         }
 
         Worker::runAll();
+         return 1;
     }
 
-    protected function open_processes($processFiles)
+    protected static function open_processes($processFiles)
     {
         $cmd = '"' . PHP_BINARY . '" ' . implode(' ', $processFiles);
         $descriptors = [STDIN, STDOUT, STDOUT];
@@ -95,9 +79,12 @@ class Laraman extends Command
         return $resource;
     }
 
-    protected function buildBootstrapWindows($processName): string
+    /**
+     * @throws Exception
+     */
+    protected static function buildBootstrapWindows($processName): string
     {
-        $basePath = base_path();
+        $basePath = Configs::getBasePath();
         $fileContent = <<<EOF
         #!/usr/bin/env php
         <?php
@@ -111,11 +98,12 @@ class Laraman extends Command
 
         require '$basePath/vendor/autoload.php';
 
-        \$app = new \Itinysun\Laraman\Console\ConsoleApp('$basePath');
-        \$status = \$app->runServerCommand(['laraman', 'process', '$processName']);
+        \Itinysun\Laraman\Command\Configs::setBasePath('$basePath');
+
+        \$status = \Itinysun\Laraman\Command\Process::run('$processName');
         exit(\$status);
         EOF;
-        $processFile = storage_path('laraman') . DIRECTORY_SEPARATOR . "start_$processName.php";
+        $processFile = Configs::runtimePath("start_$processName.php");
         file_put_contents($processFile, $fileContent);
         return $processFile;
     }

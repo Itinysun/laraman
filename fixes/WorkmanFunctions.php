@@ -1,27 +1,13 @@
 <?php
 
-use Illuminate\Container\Container;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\App;
-use Itinysun\Laraman\Console\ConsoleApp;
+use Itinysun\Laraman\Command\Configs;
 use Workerman\Connection\TcpConnection;
-use Workerman\Protocols\Http;
 use Workerman\Worker;
 
 function isWindows(): bool
 {
     return DIRECTORY_SEPARATOR !== "/";
-}
-
-function app($abstract = null, array $parameters = [])
-{
-    $instance = Container::getInstance();
-    if (!$instance->resolved('app'))
-        $instance = ConsoleApp::getInstance();
-    if (is_null($abstract)) {
-        return $instance;
-    }
-    return $instance->make($abstract, $parameters);
 }
 
 /**
@@ -176,7 +162,7 @@ function startProcessWithName(string $configName, string $processName = null): v
     if (!$processName)
         $processName = $configName;
 
-    $config = config('laraman.' . $configName);
+    $config = Configs::get($configName);
 
     if (empty($config))
         throw new Exception('process config not found for ' . $configName);

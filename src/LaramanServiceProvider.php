@@ -3,6 +3,7 @@
 namespace Itinysun\Laraman;
 
 use Illuminate\Support\ServiceProvider;
+use Itinysun\Laraman\Command\ConfigProxy;
 use Itinysun\Laraman\Command\Process;
 
 class LaramanServiceProvider extends ServiceProvider
@@ -27,7 +28,7 @@ class LaramanServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-
+        $this->commands([ConfigProxy::class]);
     }
 
     /**
