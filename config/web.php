@@ -64,7 +64,12 @@ return [
          * 单位为秒，0 为禁用心跳
          * */
         'db_heartbeat_interval'=>59,
+
+        /*
+         * 事件绑定
+         */
         'events' => [
+            //接受到请求后的事件
             RequestReceived::class => [
                 CleanBaseState::class,
                 CleanWebState::class,
@@ -73,6 +78,7 @@ return [
                 // \Dcat\Admin\Octane\Listeners\FlushAdminState::class
 
             ],
+            //如果非web请求，那么会触发这个事件
             TaskReceived::class => [
 
             ]

@@ -7,7 +7,7 @@ use Itinysun\Laraman\Events\MessageReceived;
 use Itinysun\Laraman\Traits\HasWorkermanBuilder;
 use Itinysun\Laraman\Traits\HasWorkermanEvents;
 use Workerman\Connection\TcpConnection;
-use Workerman\Worker;
+use Itinysun\Laraman\Server\LaramanWorker as Worker;
 
 /**
  *

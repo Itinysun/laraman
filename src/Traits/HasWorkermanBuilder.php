@@ -3,7 +3,7 @@
 namespace Itinysun\Laraman\Traits;
 
 use Itinysun\Laraman\Command\Configs;
-use Workerman\Worker;
+use Itinysun\Laraman\Server\LaramanWorker as Worker;
 
 trait HasWorkermanBuilder
 {

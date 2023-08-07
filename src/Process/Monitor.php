@@ -20,7 +20,7 @@ use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SplFileInfo;
 use Workerman\Timer;
-use Workerman\Worker;
+use Itinysun\Laraman\Server\LaramanWorker as Worker;
 
 /**
  * Class FileMonitor

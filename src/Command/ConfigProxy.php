@@ -7,14 +7,14 @@ use Illuminate\Console\Command;
 class ConfigProxy extends Command
 {
     /**
-     * The name and signature of the console command.
+     * 使用这个命令来获取laravel运行环境下的配置
      *
      * @var string
      */
     protected $signature = 'laraman-config';
 
     /**
-     * The console command description.
+     * 使用这个命令来获取laravel的配置
      *
      * @var string
      */

@@ -1,5 +1,7 @@
 <?php
-
+/*
+ * 这里是服务器公共配置文件
+ */
 return [
 
     /*
@@ -9,7 +11,8 @@ return [
     'processes'=>[
         'web','monitor'
     ],
-    //运行目录
+
+    //本程序运行目录，需要有读写权限，默认放入laravel的存储路径
     'runtime_path' => storage_path('laraman'),
 
     /*
@@ -34,5 +37,4 @@ return [
      * 以下是 connection 全局唯一设定
     */
     'max_package_size' => 10 * 1024 * 1024,
-
 ];

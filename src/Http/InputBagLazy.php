@@ -4,7 +4,6 @@ namespace Itinysun\Laraman\Http;
 
 
 use Symfony\Component\HttpFoundation\FileBag;
-use Symfony\Component\HttpFoundation\HeaderBag;
 use Symfony\Component\HttpFoundation\InputBag;
 use Symfony\Component\HttpFoundation\ServerBag;
 use Traversable;

@@ -3,16 +3,20 @@
 namespace Itinysun\Laraman\Command;
 
 use Exception;
+use Itinysun\Laraman\Server\LaramanWorker;
 use Throwable;
-use Workerman\Worker;
 
+/**
+ * 单一 Process 运行入口
+ */
 class Process
 {
 
     /**
+     * @param string $processName process 的名称，如果为空，则从命令行中获取
      * @throws Exception|Throwable
      */
-    public static function run($processName=''): int
+    public static function run(string $processName=''): int
     {
         ini_set('display_errors', 'on');
         error_reporting(E_ALL);
@@ -38,7 +42,7 @@ class Process
         }
 
         startProcessWithName($processName);
-        Worker::runAll();
+        LaramanWorker::runAll();
         return 1;
     }
 }

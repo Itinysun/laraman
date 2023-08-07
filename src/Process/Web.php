@@ -10,7 +10,7 @@ use Itinysun\Laraman\Traits\HasLaravelApplication;
 use Itinysun\Laraman\Traits\HasRefreshTelescope;
 use Throwable;
 use Workerman\Connection\TcpConnection;
-use Workerman\Worker;
+use Itinysun\Laraman\Server\LaramanWorker as Worker;
 
 /**
  *

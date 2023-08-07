@@ -2,9 +2,8 @@
 
 namespace Itinysun\Laraman\Traits;
 
-use Illuminate\Http\Request;
 use Workerman\Connection\TcpConnection;
-use Workerman\Worker;
+use Itinysun\Laraman\Server\LaramanWorker as Worker;
 
 trait HasWorkermanEvents
 {

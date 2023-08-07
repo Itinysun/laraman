@@ -17,7 +17,7 @@ use Itinysun\Laraman\Server\LaramanKernel;
 use Throwable;
 use Workerman\Connection\TcpConnection;
 use Workerman\Timer;
-use Workerman\Worker;
+use Itinysun\Laraman\Server\LaramanWorker as Worker;
 
 trait HasLaravelApplication
 {
