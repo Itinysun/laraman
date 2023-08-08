@@ -82,26 +82,4 @@ class ProcessBase
             require $fixesDir . '/fix-symfony-file-moving.php';
         }
     }
-
-
-
-    /**
-     * @param Request $request
-     * @return void
-     */
-    protected function flushUploadedFiles(Request $request): void
-    {
-        foreach ($request->files->all() as $file) {
-            if (!$file instanceof \SplFileInfo ||
-                !is_string($path = $file->getRealPath())) {
-                continue;
-            }
-
-            clearstatcache(true, $path);
-
-            if (is_file($path)) {
-                unlink($path);
-            }
-        }
-    }
 }
