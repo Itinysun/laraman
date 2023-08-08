@@ -95,7 +95,7 @@ class StaticFileServer
             foreach (static::$config['defaultPage'] as $page){
                 $defaultPageTry = $path.DIRECTORY_SEPARATOR.$page;
                 if(file_exists($defaultPageTry)){
-                    Log::debug('use defaultPage as static file response',compact($page,$path));
+                    Log::debug('use defaultPage as static file response',compact('page','path'));
                     $file=$defaultPageTry;
                     $foundDefault = true;
                 }
