@@ -4,28 +4,26 @@ namespace Itinysun\Laraman\Command;
 
 use Exception;
 use Itinysun\Laraman\Process\Monitor;
+use Itinysun\Laraman\Server\LaramanWorker;
 use Throwable;
-use Workerman\Worker;
 
 class Laraman
 {
     public const VERSION = "2.0.0 beta";
 
-    public const NAME = "laraman v" . self::VERSION."\r\n";
-
-
+    public const NAME = "laraman v" . self::VERSION . "\r\n";
 
     /**
-     * Execute the console command.
+     * 运行时主命令入口
      * @throws Throwable
      */
     public static function run(): int
     {
 
         //打印版本号
-        Worker::safeEcho(self::NAME);
+        LaramanWorker::safeEcho(self::NAME);
 
-        //读取公共配置
+        //读取服务器公共配置
         $config = Configs::get('server');
 
         //创建运行目录
@@ -40,7 +38,7 @@ class Laraman
             $processFiles = [];
             $monitor = null;
             foreach ($processes as $name) {
-                if($name=='monitor'){
+                if ($name == 'monitor') {
                     $monitorConfig = Configs::get('monitor');
                     $option = $monitorConfig['options'];
                     $monitor = new Monitor($option);
@@ -64,8 +62,8 @@ class Laraman
             }
         }
 
-        Worker::runAll();
-         return 1;
+        LaramanWorker::runAll();
+        return 1;
     }
 
     protected static function open_processes($processFiles)
@@ -97,6 +95,9 @@ class Laraman
         require_once '$basePath/vendor/itinysun/laraman/fixes/WorkmanFunctions.php';
 
         require '$basePath/vendor/autoload.php';
+
+        //准备workerman的运行环境
+        \Itinysun\Laraman\Server\LaramanWorker::prepare();
 
         \Itinysun\Laraman\Command\Configs::setBasePath('$basePath');
 
