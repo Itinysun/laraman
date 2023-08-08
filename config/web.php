@@ -95,7 +95,18 @@ return [
                 public_path()
             ],
             //是否支持获取php文件结果，如果启用则获取运行后结果，如果不启用则返回错误
-            'support_php' => false
+            'support_php' => false,
+
+            /*
+             * 默认页面文件，当访问一个路径时，会尝试查找下面的默认页面文件
+             * 请按照从上到下优先级来写
+             * 如果不设置也不会列出目录
+             * 如果是php文件，必须开启上面的support_php
+             */
+            'defaultPage'=>[
+                'index.html',
+                //'index.php',
+            ]
         ]
     ],
     'handler' => Web::class

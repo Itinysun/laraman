@@ -6,6 +6,7 @@ use Exception;
 use Fruitcake\Cors\CorsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Log;
 use Itinysun\Laraman\Http\Response;
 
 class StaticFileServer
@@ -87,6 +88,24 @@ class StaticFileServer
         $path = public_path($path);
         $file = realpath($path);
         clearstatcache($file);
+
+        //尝试寻找默认页面
+        if(is_dir($path)){
+            $foundDefault = false;
+            foreach (static::$config['defaultPage'] as $page){
+                $defaultPageTry = $path.DIRECTORY_SEPARATOR.$page;
+                if(file_exists($defaultPageTry)){
+                    Log::debug('use defaultPage as static file response',compact($page,$path));
+                    $file=$defaultPageTry;
+                    $foundDefault = true;
+                }
+            }
+            if(!$foundDefault){
+                return null;
+            }
+        }
+
+        //尝试寻找文件
         if (file_exists($file)) {
             $checkSafePath = static::$isSafePath;
             if ($checkSafePath($file)) {
@@ -95,6 +114,7 @@ class StaticFileServer
                 return false;
             }
         }
+
         return null;
     }
 

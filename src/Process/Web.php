@@ -17,7 +17,7 @@ use Itinysun\Laraman\Server\LaramanWorker as Worker;
  */
 class Web extends ProcessBase
 {
-    use HasRefreshTelescope,HasLaravelApplication;
+    use HasRefreshTelescope, HasLaravelApplication;
 
 
     /**
@@ -28,19 +28,19 @@ class Web extends ProcessBase
      * @return void
      * @throws Throwable
      */
-    protected function onHttpMessage(mixed $connection,Request $request): void
+    protected function onHttpMessage(mixed $connection, Request $request): void
     {
         try {
             //首先检查是否是静态文件，如果是返回文件响应，如果不是则继续获取laravel响应
-            if (StaticFileServer::$enabled && str_contains($request->path(), '.')) {
+            if (StaticFileServer::$enabled) {
                 $result = StaticFileServer::tryServeFile($request);
-                if(null!==$result){
-                    $this->send($connection,$result,$request);
-                    return ;
+                if (null !== $result) {
+                    $this->send($connection, $result, $request);
+                    return;
                 }
             }
 
-            RequestReceived::dispatch($this->app,$this->app,$request);
+            RequestReceived::dispatch($this->app, $this->app, $request);
 
             //如果启用了telescope，需要每次重置状态
             $this->refreshTelescope($request);
@@ -58,7 +58,7 @@ class Web extends ProcessBase
             report($e);
 
             //使用原生laravel的方式渲染异常并发送异常，请查看laravel手册
-            $response = $this->exceptionHandler->render($request,$e);
+            $response = $this->exceptionHandler->render($request, $e);
             $this->send($connection, Response::fromLaravelResponse($response)->withStatus(500), $request);
         }
     }
@@ -71,7 +71,7 @@ class Web extends ProcessBase
     protected function onWorkerStart(Worker $worker): void
     {
         //读取配置，初始化静态文件服务
-        if(isset($this->options['static_file']))
+        if (isset($this->options['static_file']))
             StaticFileServer::init($this->options['static_file']);
 
     }

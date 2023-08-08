@@ -24,7 +24,6 @@ class Request extends \Symfony\Component\HttpFoundation\Request
 {
     public static function createFromWorkmanRequest(WorkmanRequest $workmanRequest): \Illuminate\Http\Request
     {
-        dump($workmanRequest->path());
         return new \Illuminate\Http\Request($workmanRequest->get(),$workmanRequest->post(),[],$workmanRequest->cookie(),self::resolveFiles($workmanRequest),self::resolveServerParams($workmanRequest),$workmanRequest->rawBody());
     }
     protected static function resolveServerParams(WorkmanRequest $workmanRequest): array
