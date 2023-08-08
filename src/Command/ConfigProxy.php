@@ -3,6 +3,7 @@
 namespace Itinysun\Laraman\Command;
 
 use Illuminate\Console\Command;
+use JetBrains\PhpStorm\NoReturn;
 
 class ConfigProxy extends Command
 {
@@ -20,8 +21,8 @@ class ConfigProxy extends Command
      */
     protected $description = 'get laraman configs with laravel';
 
-    public function handle(): void
+    #[NoReturn] public function handle(): void
     {
-        $this->info(json_encode(config('laraman')));
+        exit(json_encode(config('laraman')));
     }
 }
