@@ -74,7 +74,7 @@ class Configs
         self::init();
         if (empty($name))
             return self::$runtimePath;
-        return self::$runtimePath . PATH_SEPARATOR . $name;
+        return self::$runtimePath . DIRECTORY_SEPARATOR . $name;
     }
 
     /**
@@ -100,6 +100,6 @@ class Configs
         if (empty($name))
             return self::$basePath;
         else
-            return self::$basePath . PATH_SEPARATOR . $name;
+            return self::$basePath . DIRECTORY_SEPARATOR . $name;
     }
 }
