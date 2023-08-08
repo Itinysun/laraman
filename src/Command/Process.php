@@ -3,41 +3,46 @@
 namespace Itinysun\Laraman\Command;
 
 use Exception;
-use Illuminate\Console\Command;
-use Workerman\Worker;
+use Itinysun\Laraman\Server\LaramanWorker;
+use Throwable;
 
-class Process extends Command
+/**
+ * 单一 Process 运行入口
+ */
+class Process
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
-    protected  $signature = 'laraman:process {name : The process name to run}';
 
     /**
-     * The console command description.
-     *
-     * @var string
+     * @param string $processName process 的名称，如果为空，则从命令行中获取
+     * @throws Exception|Throwable
      */
-    protected  $description = 'run laraman process';
-
-    /**
-     * @throws Exception
-     */
-    public function handle(): void
+    public static function run(string $processName=''): int
     {
         ini_set('display_errors', 'on');
         error_reporting(E_ALL);
-        make_dir(storage_path('laraman'));
+
+        if(empty($processName)){
+            if (isset($argv[2])) {
+                $processName = $argv[2];
+            } else {
+                throw new Exception('please give the process name');
+            }
+        }
+
+        //读取公共配置
+        $config = Configs::get('server');
+
+        //创建运行目录
+        make_dir($config['runtime_path']);
+
+        initWorkerConfig($config);
 
         if (is_callable('opcache_reset')) {
             opcache_reset();
         }
 
-        $processName=$this->argument('name');
-
         startProcessWithName($processName);
-        Worker::runAll();
+        LaramanWorker::runAll();
+        return 1;
     }
 }

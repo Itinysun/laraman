@@ -15,11 +15,12 @@
 namespace Itinysun\Laraman\Process;
 
 use FilesystemIterator;
+use Itinysun\Laraman\Command\Configs;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SplFileInfo;
 use Workerman\Timer;
-use Workerman\Worker;
+use Itinysun\Laraman\Server\LaramanWorker as Worker;
 
 /**
  * Class FileMonitor
@@ -81,7 +82,7 @@ class Monitor extends ProcessBase
     {
         parent::__construct($options);
 
-        static::$lockFile=storage_path('laraman').'/monitor.lock';
+        static::$lockFile=Configs::getBasePath('monitor.lock');
 
         static::resume();
         $this->paths = (array)$options['monitorDir'];

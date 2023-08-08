@@ -7,7 +7,7 @@ use Itinysun\Laraman\Events\MessageReceived;
 use Itinysun\Laraman\Traits\HasWorkermanBuilder;
 use Itinysun\Laraman\Traits\HasWorkermanEvents;
 use Workerman\Connection\TcpConnection;
-use Workerman\Worker;
+use Itinysun\Laraman\Server\LaramanWorker as Worker;
 
 /**
  *
@@ -80,28 +80,6 @@ class ProcessBase
         }
         if (!function_exists('\\Symfony\\Component\\HttpFoundation\\File\\move_uploaded_file')) {
             require $fixesDir . '/fix-symfony-file-moving.php';
-        }
-    }
-
-
-
-    /**
-     * @param Request $request
-     * @return void
-     */
-    protected function flushUploadedFiles(Request $request): void
-    {
-        foreach ($request->files->all() as $file) {
-            if (!$file instanceof \SplFileInfo ||
-                !is_string($path = $file->getRealPath())) {
-                continue;
-            }
-
-            clearstatcache(true, $path);
-
-            if (is_file($path)) {
-                unlink($path);
-            }
         }
     }
 }

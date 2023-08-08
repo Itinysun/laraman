@@ -2,7 +2,8 @@
 
 namespace Itinysun\Laraman\Traits;
 
-use Workerman\Worker;
+use Itinysun\Laraman\Command\Configs;
+use Itinysun\Laraman\Server\LaramanWorker as Worker;
 
 trait HasWorkermanBuilder
 {
@@ -13,7 +14,9 @@ trait HasWorkermanBuilder
      */
     public static function buildWorker($configName, $processName = null): Worker
     {
-        $config = config("laraman.$processName.workerman");
+        $main = Configs::get($configName);
+
+        $config = $main['workerman'];
 
         /*
          * check config['count'],
