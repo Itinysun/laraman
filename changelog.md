@@ -2,6 +2,13 @@
 
 All notable changes to `Laraman` will be documented in this file.
 
+## version 2.0.0 released
+please force update if old version installed
+refactor the start engine
+fix upload file bug
+add default page feature
+
+
 ## version 1.0.0 released
 please force update if old version installed
 
