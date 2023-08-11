@@ -19,15 +19,12 @@ trait HasCleanMode
      */
     public function bind($abstract, $concrete = null, $shared = false): void
     {
-        parent::bind($abstract, $concrete, $shared);
-
-        if(!$this->cleanMode || in_array($abstract,$this->scopedInstances))
-            return;
-
         $basename = class_basename($abstract);
-        if(!in_array($basename,$this->originBaseNames)){
-            $this->scopedInstances[]=$abstract;
+        if($this->cleanMode  && !in_array($basename,$this->originBaseNames)){
+            $this->scopedInstances[] = $abstract;
+            $shared=true;
         }
+        parent::bind($abstract,$concrete,$shared);
     }
 
 
