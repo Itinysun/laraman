@@ -17,7 +17,7 @@ try {
     \Itinysun\Laraman\Server\LaramanWorker::prepare();
 
     //识别是否需要执行子进程 process
-    $process = isset($argv[1]) ?? $argv[1]=='process' ? $argv[2] : false;
+    $process = isset($argv[1]) && $argv[1]=='process' ? $argv[2] : false;
 
     if($process){
         $status = \Itinysun\Laraman\Command\Process::run($process);
