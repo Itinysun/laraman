@@ -11,9 +11,11 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Itinysun\Laraman\Command\Configs;
+use Itinysun\Laraman\Events\MessageDone;
 use Itinysun\Laraman\Http\Response;
 use Itinysun\Laraman\Server\LaramanApp;
 use Itinysun\Laraman\Server\LaramanKernel;
+use Itinysun\Laraman\Server\LaramanWorker;
 use Throwable;
 use Workerman\Connection\TcpConnection;
 use Workerman\Timer;
@@ -66,6 +68,9 @@ trait HasLaravelApplication
                 //clean files after message
                 //销毁实例会自动删除文件
                 unset($data);
+
+                //销毁文件之后再检查重启
+                $this->checkRestart();
                 return;
             }
             if (in_array($this->worker->protocol, ['Workerman\Protocols\Frame', 'Workerman\Protocols\Text', 'Workerman\Protocols\Websocket', 'Workerman\Protocols\Ws']))
@@ -76,6 +81,7 @@ trait HasLaravelApplication
         } else {
             $this->onMessage($connection, $data);
         }
+        MessageDone::dispatch($connection,$data);
     }
 
     public function _onWorkerStart(Worker $worker): void

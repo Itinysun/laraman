@@ -2,9 +2,9 @@
 
 namespace Itinysun\Laraman;
 
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Itinysun\Laraman\Command\ConfigProxy;
-use Itinysun\Laraman\Command\Process;
 
 class LaramanServiceProvider extends ServiceProvider
 {
@@ -17,7 +17,9 @@ class LaramanServiceProvider extends ServiceProvider
     {
         if ($this->app->runningInConsole()) {
             $this->bootForConsole();
-
+            if($this->app->resolved('admin.extend')){
+                Event::listen(\Slowlyo\OwlAdmin\Events\ExtensionChanged::class,\Itinysun\Laraman\Listeners\OwlAdminExtensionChanged::class);
+            }
         }
     }
 

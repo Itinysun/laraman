@@ -10,6 +10,7 @@ use Workerman\Worker;
  */
 class LaramanWorker extends Worker
 {
+    public static bool $needRestart = false;
     /**
      * 去掉了默认的resetStd()
      * @throws Exception
