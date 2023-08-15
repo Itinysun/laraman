@@ -38,19 +38,13 @@ return [
          * */
         'count' => env('LARAMAN_WEB_WORKERS', 0),
 
-        //运行命令使用的用户及组，windows无效
-        'user' => '',
-        'group' => '',
-
-        //是否支持端口复用，如果你需要不同process共用1个端口，请设置为true
-        'reusePort' => false,
-
         //是否支持平滑重启，如果是持续性任务，请设置为false
         'reloadable' => true,
 
-        //是否以守护模式运行，windows无效 等效 -d
-        'daemonize' => false,
 
+        //运行命令使用的用户及组，windows无效
+        'user' => '',
+        'group' => '',
     ],
     'options' => [
         /*

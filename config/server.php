@@ -12,6 +12,9 @@ return [
         'web','monitor'
     ],
 
+    //是否支持端口复用，如果你需要不同process共用1个端口，请设置为true
+    'reusePort' => false,
+
     //本程序运行目录，需要有读写权限，默认放入laravel的存储路径
     'runtime_path' => storage_path('laraman'),
 
@@ -37,4 +40,9 @@ return [
      * 以下是 connection 全局唯一设定
     */
     'max_package_size' => 10 * 1024 * 1024,
+
+
+    //是否以守护模式运行，windows无效 等效 -d
+    'daemonize' => false,
+
 ];

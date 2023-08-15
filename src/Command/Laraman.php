@@ -35,9 +35,11 @@ class Laraman
         $processes = $config['processes'];
 
         if (isWindows()) {
+            /*准备各进程启动文件*/
             $processFiles = [];
             $monitor = null;
             foreach ($processes as $name) {
+                /*加载监控进程*/
                 if ($name == 'monitor') {
                     $monitorConfig = Configs::get('monitor');
                     $option = $monitorConfig['options'];
@@ -57,6 +59,10 @@ class Laraman
                 }
             }
         } else {
+            /*仅当配置文件设置为true时才主动配置此选项，这样在用户手动输入-d时也可生效*/
+            if($config['daemonize']){
+                LaramanWorker::$daemonize=true;
+            }
             foreach ($processes as $process) {
                 startProcessWithName($process);
             }
