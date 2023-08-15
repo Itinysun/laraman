@@ -17,10 +17,14 @@ try {
     \Itinysun\Laraman\Server\LaramanWorker::prepare();
 
     //识别是否需要执行子进程 process
-    $process = isset($argv[1]) && $argv[1]=='process' ? $argv[2] : false;
-
-    if($process){
-        $status = \Itinysun\Laraman\Command\Process::run($process);
+    global $argv;
+    $usingProcess = isset($argv[1]) && $argv[1]=='process';
+    if($usingProcess){
+        if(isset($argv[2])){
+            $status = \Itinysun\Laraman\Command\Process::run($argv[2]);
+        }else{
+            throw new Exception('a process name is required when using single process mode!');
+        }
     }else{
         $status = \Itinysun\Laraman\Command\Laraman::run();
     }
