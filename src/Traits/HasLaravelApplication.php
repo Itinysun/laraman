@@ -81,7 +81,7 @@ trait HasLaravelApplication
         } else {
             $this->onMessage($connection, $data);
         }
-        MessageDone::dispatch($connection,$data);
+        MessageDone::dispatch($connection, $data);
     }
 
     public function _onWorkerStart(Worker $worker): void
@@ -123,7 +123,7 @@ trait HasLaravelApplication
         数据库心跳，用来保持数据连接不断开。laravel有重连机制，虽然感觉好像没有必要，但是参考的前辈们都写了，我也加上了。
         如果你觉得不需要，可以在配置文件中设置心跳间隔为0。欢迎提供反馈。
         */
-        if (isset($this->options['db_heartbeat_interval'])) {
+        if (isset($this->options['db_heartbeat_interval']) && $this->options['db_heartbeat_interval'] > 0) {
             Timer::add($this->options['db_heartbeat_interval'], function () {
                 $connections = DB::getConnections();
                 if (!$connections) {
