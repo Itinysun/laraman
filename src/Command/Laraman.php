@@ -9,7 +9,7 @@ use Throwable;
 
 class Laraman
 {
-    public const VERSION = "2.0.0 beta";
+    public const VERSION = "2.0.3 beta";
 
     public const NAME = "laraman v" . self::VERSION . "\r\n";
 
