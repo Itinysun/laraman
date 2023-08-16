@@ -1,5 +1,7 @@
 <?php
 
+use Itinysun\Laraman\Events\MessageDone;
+use Itinysun\Laraman\Events\MessageReceived;
 use Itinysun\Laraman\Events\RequestReceived;
 use Itinysun\Laraman\Events\TaskReceived;
 use Itinysun\Laraman\Listeners\CleanBaseState;
@@ -50,32 +52,45 @@ return [
         /*
          * 洁癖模式
          * 为了兼容未知内容，可以开启洁癖模式，除了laravel原生自带的服务，所有其他服务均被标记为scoped，然后在每次请求后自动销毁
+         * 如果有应用是在laravel启动时进行动态加载一些参数到服务中，可能因服务重新启动导致这些参数丢失，例如owl-admin
         */
         'clearMode' => false,
 
         /*
          * 数据库心跳
          * 单位为秒，0 为禁用心跳
+         * laravel有数据重连机制，所以如果没有出现问题，可以不用打开这个
          * */
-        'db_heartbeat_interval'=>59,
+        'db_heartbeat_interval'=>0,
 
         /*
          * 事件绑定
+         * 可以进行自定义处理，请尽量不要抛出异常
          */
         'events' => [
-            //接受到请求后的事件
+            /*
+             * 接受到请求后的事件，适用于WEB进程
+             * 这会在接收到HTTP请求，进行处理之前触发
+             * 已经按照octance进行了兼容，已自动兼容owl-admin和dcat-admin
+            */
             RequestReceived::class => [
                 CleanBaseState::class,
                 CleanWebState::class,
-
-                /*如果你使用DcatAdmin请取消下面这行注释*/
-                // \Dcat\Admin\Octane\Listeners\FlushAdminState::class
-
             ],
-            //如果非web请求，那么会触发这个事件
+            //兼容octance保留待用
             TaskReceived::class => [
 
-            ]
+            ],
+            /*
+             * 对于非WEB请求，请使用如下两个事件
+             */
+            MessageReceived::class=>[
+
+            ],
+            MessageDone::class=>[
+
+            ],
+
         ],
         /*静态文件配置*/
         'static_file' => [

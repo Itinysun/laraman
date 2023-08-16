@@ -5,6 +5,8 @@ namespace Itinysun\Laraman;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use Itinysun\Laraman\Command\ConfigProxy;
+use Itinysun\Laraman\Events\RequestReceived;
+use Itinysun\Laraman\Listeners\OwlAdminExtensionChanged;
 
 class LaramanServiceProvider extends ServiceProvider
 {
@@ -17,8 +19,15 @@ class LaramanServiceProvider extends ServiceProvider
     {
         if ($this->app->runningInConsole()) {
             $this->bootForConsole();
-            if($this->app->resolved('admin.extend')){
-                Event::listen(\Slowlyo\OwlAdmin\Events\ExtensionChanged::class,\Itinysun\Laraman\Listeners\OwlAdminExtensionChanged::class);
+
+            /*
+             * 框架兼容处理
+             */
+            if(class_exists(\Slowlyo\OwlAdmin\Admin::class)){
+                Event::listen(\Slowlyo\OwlAdmin\Events\ExtensionChanged::class, OwlAdminExtensionChanged::class);
+            }
+            if(class_exists(\Dcat\Admin\Admin::class)){
+                Event::listen(RequestReceived::class,\Dcat\Admin\Octane\Listeners\FlushAdminState::class);
             }
         }
     }
