@@ -17,6 +17,9 @@ class LaramanWorker extends Worker
      */
     public static function RunAll(): void
     {
+
+        static::parseCommand();
+        static::init();
         static::lock();
         static::daemonize();
         static::initWorkers();
@@ -38,8 +41,6 @@ class LaramanWorker extends Worker
     public static function prepare(): void
     {
         static::checkSapiEnv();
-        static::init();
-        static::parseCommand();
         static::resetStd();
     }
 }
