@@ -2,6 +2,12 @@
 
 All notable changes to `Laraman` will be documented in this file.
 
+## version 2.0.5
+feat:add schedule process
+
+## version 2.0.4
+fix:start up script
+
 ## version 2.0.3
 feat:add support for owl-admin , try to detect owl-admin or dcat-admin and make auto support
 
