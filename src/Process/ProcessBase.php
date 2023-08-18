@@ -96,7 +96,7 @@ class ProcessBase
     {
         if(LaramanWorker::$needRestart){
             LaramanWorker::$needRestart=false;
-            $this->worker->stop();
+            LaramanWorker::stopAll();
         }
     }
 }
