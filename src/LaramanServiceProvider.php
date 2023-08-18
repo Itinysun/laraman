@@ -54,6 +54,7 @@ class LaramanServiceProvider extends ServiceProvider
             __DIR__.'/../config/web.php' => config_path('laraman/web.php'),
             __DIR__.'/../config/monitor.php' => config_path('laraman/monitor.php'),
             __DIR__.'/../config/server.php' => config_path('laraman/server.php'),
+            __DIR__.'/../config/schedule.php' => config_path('laraman/schedule.php'),
             __DIR__ . '/../config/starter.php' =>base_path('laraman')
         ],'laraman.install');
     }

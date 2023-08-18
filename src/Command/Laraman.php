@@ -9,7 +9,7 @@ use Throwable;
 
 class Laraman
 {
-    public const VERSION = "2.0.3 beta";
+    public const VERSION = "2.0.5 beta";
 
     public const NAME = "laraman v" . self::VERSION . "\r\n";
 
@@ -19,7 +19,6 @@ class Laraman
      */
     public static function run(): int
     {
-
         //打印版本号
         LaramanWorker::safeEcho(self::NAME);
 

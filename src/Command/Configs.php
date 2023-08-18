@@ -30,8 +30,8 @@ class Configs
     {
         if (!empty(self::$config))
             return;
-        $exe =PHP_BINARY;
 
+        $exe =PHP_BINARY;
         $cur = self::$basePath.DIRECTORY_SEPARATOR.'artisan';
         $command = "$exe $cur laraman-config";
 
