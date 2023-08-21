@@ -9,6 +9,11 @@ require_once __DIR__.'/vendor/itinysun/laraman/fixes/WorkmanFunctions.php';
 
 require_once __DIR__.'/vendor/autoload.php';
 
+include_once './vendor/itinysun/laraman/fixes/fix-symfony-stdout.php';
+
+class_alias(\Symfony\Component\Console\Output\ConsoleOutputFix::class,Symfony\Component\Console\Output\ConsoleOutput::class);
+
+
 try {
     //设置laravel需要的根路径
     \Itinysun\Laraman\Command\Configs::setBasePath(dirname(__FILE__));
