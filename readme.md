@@ -6,7 +6,7 @@
 
 Run laravel with workman , 1 artisan command, 10x speed up
 
-v2.0.5 released ! 
+v2.0.6 released ! 
 
 _support dcat/admin and owl-admin now_
 

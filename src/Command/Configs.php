@@ -33,7 +33,7 @@ class Configs
 
         $exe =PHP_BINARY;
         $cur = self::$basePath.DIRECTORY_SEPARATOR.'artisan';
-        $command = "$exe $cur laraman-config";
+        $command = "\"$exe\" \"$cur\" laraman-config";
 
         $output = shell_exec($command);
 
