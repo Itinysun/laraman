@@ -46,6 +46,7 @@ class Request extends \Symfony\Component\HttpFoundation\Request
         $server['PHP_SELF']='laraman';
         $server['REQUEST_TIME_FLOAT']=microtime(true);
         $server['REQUEST_TIME']=time();
+        $server['QUERY_STRING']=$workmanRequest->queryString();
         return $server;
     }
 
